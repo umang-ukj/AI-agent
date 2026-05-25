@@ -12,7 +12,7 @@ import com.example.aiagent.service.ChatService;
 
 
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/generate")
 public class ChatController {
 
     @Autowired
