@@ -10,9 +10,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
-import com.example.aiagent.DTO.Restaurant;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.example.aiagent.DTO.Intent;
+import com.example.aiagent.tool.Tool;
 @Service
 public class ChatService {
 
@@ -20,10 +19,16 @@ public class ChatService {
     private RestTemplate restTemplate;
     
     @Autowired
-    private RestaurantService restaurantService;
+    private IntentService intentService;
+    
+    @Autowired
+    private IntentClassifierService intentClassifierService;
     
     @Autowired
     private MemoryService memoryService;
+    
+    @Autowired
+    private ToolRegistry toolRegistry;
     
     @Value("${ollama.api.url}")
     private String ollamaApiUrl;
@@ -35,53 +40,26 @@ public class ChatService {
 
         String userMessage = chatRequest.getMessage();
         
+        Intent intent =intentClassifierService.classify(userMessage);
+        
         String sessionId = chatRequest.getSessionId();
         
         //adding msg to in-memoryDB based on session ID
         memoryService.addMessage(sessionId,"user", userMessage);
         
         //convo history retrival based on sessionID
-        List<String> history =
-                memoryService.getConversation(sessionId);
-        
-     // Basic RAG
-        String restaurantContext = "";
+        List<String> history =memoryService.getConversation(sessionId);
 
-        if (userMessage.toLowerCase().contains("restaurant")|| userMessage.toLowerCase().contains("food")) {
+        Tool tool =toolRegistry.getTool(intent);
 
-            Pattern pattern =Pattern.compile("under\\s+(\\d+)");
+        String toolContext = "";
 
-            Matcher matcher =pattern.matcher(userMessage.toLowerCase());
-
-            Integer budget = null;
-
-            if (matcher.find()) {
-                budget = Integer.parseInt(matcher.group(1));
-            }
-
-            List<Restaurant> restaurants;
-
-            if (budget != null) {
-                restaurants =restaurantService.getVegRestaurantsUnderBudget(budget);
-            } 
-            else {
-                restaurants =restaurantService.getVegRestaurants();
-            }
-
-            restaurantContext =
-                    """
-                    Use ONLY the restaurants provided below.
-
-                    Restaurant Data:
-                    """
-                    + restaurants
-                    + "\n\n";
+        if(tool != null) {
+            toolContext =tool.execute(userMessage);
         }
-
+        
      // Final prompt
-        String fullPrompt =
-                restaurantContext +
-                String.join("\n", history);
+        String fullPrompt =toolContext +String.join("\n", history);
         
         // Ollama request body
         Map<String, Object> requestBody = Map.of(

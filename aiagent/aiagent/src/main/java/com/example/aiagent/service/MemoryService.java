@@ -16,12 +16,18 @@ public class MemoryService {
 	private final Map<String, List<String>> memory=new HashMap<>();
 	
 	public void addMessage(String sessionId, String role, String message) {
-		memory.computeIfAbsent(sessionId, k -> new ArrayList<>())
-        .add(message);
+		memory.computeIfAbsent(sessionId, k -> new ArrayList<>()).add(role + ": " + message);
 	}
 	
 	public List<String> getConversation(String sessionId) {
-		return memory.getOrDefault(sessionId, new ArrayList<>());
+
+	    List<String> history =memory.getOrDefault(sessionId,new ArrayList<>());
+
+	    if(history.size() > 6) {
+	        return history.subList(history.size() - 6,history.size());
+	    }
+	    
+	    return history;
 	}
 
 }
