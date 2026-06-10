@@ -1,14 +1,13 @@
 package com.example.aiagent.tool;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.DTO.RestaurantSearchRequest;
+import com.example.aiagent.service.ParameterExtractionService;
 import com.example.aiagent.service.RestaurantService;
 
 @Component
@@ -17,6 +16,8 @@ public class RestaurantTool implements Tool {
     @Autowired
     private RestaurantService restaurantService;
     
+    @Autowired
+    private ParameterExtractionService parameterExtractionService;
     @Override
     public Intent supportedIntent() {
         return Intent.RESTAURANT_SEARCH;
@@ -24,25 +25,12 @@ public class RestaurantTool implements Tool {
     
     @Override
     public String execute(String query) {
-
-        Pattern pattern =Pattern.compile("under\\s+(\\d+)");
-
-        Matcher matcher =pattern.matcher(query.toLowerCase());
-
-        Integer budget = null;
-
-        if (matcher.find()) {
-            budget =Integer.parseInt(matcher.group(1));
-        }
-
+        
+        RestaurantSearchRequest request = parameterExtractionService.extract(query);
+        
         List<Restaurant> restaurants;
 
-        if (budget != null) {
-            restaurants =restaurantService.getVegRestaurantsUnderBudget(budget);
-        } 
-        else {
-            restaurants =restaurantService.getVegRestaurants();
-        }
+        restaurants =restaurantService.searchRestaurants(request);
 
         return """
                 Use ONLY the restaurants provided below.
