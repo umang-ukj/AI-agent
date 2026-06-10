@@ -15,7 +15,7 @@ public class MemoryService {
 	
 	private final Map<String, List<String>> memory=new HashMap<>();
 	
-	public void addMessage(String sessionId, String message) {
+	public void addMessage(String sessionId, String role, String message) {
 		memory.computeIfAbsent(sessionId, k -> new ArrayList<>())
         .add(message);
 	}
