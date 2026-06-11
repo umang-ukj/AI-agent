@@ -59,7 +59,25 @@ public class ChatService {
         }
         
      // Final prompt
-        String fullPrompt =toolContext +String.join("\n", history);
+        //String fullPrompt =toolContext +String.join("\n", history);
+        
+        String summary =memoryService.getSummary(sessionId);
+
+        String fullPrompt =
+        	    """
+        	    Use the conversation summary only as background context.
+
+        	    Do NOT repeat the summary.
+        	    Do NOT summarize the conversation.
+        	    Answer only the user's latest request.
+
+        	    Summary:
+        	    """
+        	    + summary
+        	    + "\n\n"
+        	    + toolContext
+        	    + "\n"
+        	    + String.join("\n", history);
         
         // Ollama request body
         Map<String, Object> requestBody = Map.of(
@@ -67,7 +85,11 @@ public class ChatService {
                 "prompt", fullPrompt,
                 "stream", false
         );
-
+        
+        System.out.println("\n========== PROMPT ==========");
+        System.out.println(fullPrompt);
+        System.out.println("============================\n");
+        
         // Call Ollama API
         Map response = restTemplate.postForObject(
                 ollamaApiUrl,

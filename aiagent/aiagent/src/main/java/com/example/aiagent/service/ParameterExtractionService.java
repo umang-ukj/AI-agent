@@ -16,7 +16,13 @@ public class ParameterExtractionService {
 
         String lower =query.toLowerCase();
 
-        if(lower.contains("veg")|| lower.contains("vegetarian")) {
+        if(lower.contains("non veg")|| lower.contains("non-veg")|| lower.contains("non vegetarian")
+        		|| lower.contains("non-vegetarian")) {
+
+            request.setType("Non-Vegetarian");
+        }
+        else if(lower.contains("veg")|| lower.contains("vegetarian")) {
+
             request.setType("Vegetarian");
         }
 

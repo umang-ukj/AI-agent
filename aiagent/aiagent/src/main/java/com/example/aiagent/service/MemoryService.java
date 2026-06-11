@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 //to store conversations in in-memory DB temporarily till we work on redis DB
@@ -12,11 +13,25 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class MemoryService {
-	
+	@Autowired
+	private SummarizationService summarizationService;
 	private final Map<String, List<String>> memory=new HashMap<>();
+	private final Map<String, String> summaries = new HashMap<>();
 	
 	public void addMessage(String sessionId, String role, String message) {
 		memory.computeIfAbsent(sessionId, k -> new ArrayList<>()).add(role + ": " + message);
+		List<String> messages =memory.get(sessionId);
+
+		if(messages.size() > 10) {
+            
+			//summarizing msgs 
+			String summary = summarizationService.summarize(messages);
+
+			updateSummary(sessionId,summary);
+			
+			//summary + recent messages
+		    memory.put(sessionId,new ArrayList<>(messages.subList(messages.size() - 4,messages.size())));
+		}
 	}
 	
 	public List<String> getConversation(String sessionId) {
@@ -28,6 +43,18 @@ public class MemoryService {
 	    }
 	    
 	    return history;
+	}
+	
+	//to get summary
+	public String getSummary(String sessionId) {
+
+	    return summaries.getOrDefault(sessionId,"");
+	}
+	
+    //to store summary
+	public void updateSummary(String sessionId,String summary) {
+
+	    summaries.put(sessionId,summary);
 	}
 
 }
