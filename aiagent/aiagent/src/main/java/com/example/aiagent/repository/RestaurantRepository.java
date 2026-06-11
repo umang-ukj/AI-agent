@@ -14,4 +14,5 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     List<Restaurant> findByTypeAndPriceLessThanEqual(String type,Integer price);
     
+    List<Restaurant> findByDescriptionContainingIgnoreCase(String keyword);
 }

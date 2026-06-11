@@ -31,6 +31,12 @@ public class RestaurantTool implements Tool {
         List<Restaurant> restaurants;
 
         restaurants =restaurantService.searchRestaurants(request);
+        
+        if(restaurants.isEmpty()) {
+            return """
+                   No matching restaurants found.
+                   """;
+        }
 
         return """
                 Use ONLY the restaurants provided below.

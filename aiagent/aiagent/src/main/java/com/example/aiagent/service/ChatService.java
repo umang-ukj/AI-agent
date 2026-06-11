@@ -1,13 +1,8 @@
 package com.example.aiagent.service;
 
 import java.util.List;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.Intent;
@@ -15,8 +10,8 @@ import com.example.aiagent.tool.Tool;
 @Service
 public class ChatService {
 
-    @Autowired
-    private RestTemplate restTemplate;
+	@Autowired
+	private LLMService llmService;
     
     @Autowired
     private IntentService intentService;
@@ -29,12 +24,6 @@ public class ChatService {
     
     @Autowired
     private ToolRegistry toolRegistry;
-    
-    @Value("${ollama.api.url}")
-    private String ollamaApiUrl;
-
-    @Value("${ollama.model}")
-    private String ollamaModel;
 
     public ChatResponse getResponse(ChatRequest chatRequest) {
 
@@ -58,47 +47,62 @@ public class ChatService {
             toolContext =tool.execute(userMessage);
         }
         
-     // Final prompt
-        //String fullPrompt =toolContext +String.join("\n", history);
-        
-        String summary =memoryService.getSummary(sessionId);
+        if(toolContext.trim().equals("No matching restaurants found.")) {
 
-        String fullPrompt =
-        	    """
-        	    Use the conversation summary only as background context.
+            ChatResponse response =new ChatResponse();
 
-        	    Do NOT repeat the summary.
-        	    Do NOT summarize the conversation.
-        	    Answer only the user's latest request.
+            response.setResponse(toolContext);
 
-        	    Summary:
-        	    """
-        	    + summary
-        	    + "\n\n"
-        	    + toolContext
-        	    + "\n"
-        	    + String.join("\n", history);
+            return response;
+        }
         
-        // Ollama request body
-        Map<String, Object> requestBody = Map.of(
-                "model", ollamaModel,
-                "prompt", fullPrompt,
-                "stream", false
-        );
-        
+     // Get summary
+        String summary = memoryService.getSummary(sessionId);
+
+        String fullPrompt;
+
+        if(intent == Intent.RESTAURANT_SEARCH) {
+
+            fullPrompt =
+                    """
+                    Use ONLY the restaurant data provided below.
+
+                    Rules:
+                    - Recommend restaurants only from the provided data.
+                    - Do not invent restaurant names.
+                    - If matching restaurants exist, recommend them.
+                    - Mention their prices when relevant.
+
+                    Restaurant Data:
+                    """
+                    + toolContext
+                    + "\n\nUser Request:\n"
+                    + userMessage;
+        }
+        else {
+
+            fullPrompt =
+                    """
+                    Use the conversation summary and history as context.
+
+                    Rules:
+                    - Answer only the latest user question.
+                    - Do not repeat the summary.
+                    - Do not summarize the conversation.
+
+                    Summary:
+                    """
+                    + summary
+                    + "\n\n"
+                    + String.join("\n", history);
+        }
+
         System.out.println("\n========== PROMPT ==========");
         System.out.println(fullPrompt);
         System.out.println("============================\n");
         
-        // Call Ollama API
-        Map response = restTemplate.postForObject(
-                ollamaApiUrl,
-                requestBody,
-                Map.class
-        );
-
-        // Extract response text
-        String aiText = (String) response.get("response");
+        
+        String aiText =llmService.generate(fullPrompt);
         memoryService.addMessage(sessionId,"AI", aiText);
 
         // Return DTO

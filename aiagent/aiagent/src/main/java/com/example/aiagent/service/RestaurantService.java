@@ -21,6 +21,7 @@ public class RestaurantService {
     }
     
     public List<Restaurant> getVegRestaurantsUnderBudget(Integer budget) {
+    	
         return repository.findByTypeAndPriceLessThanEqual("Vegetarian",budget);
     }
     public List<Restaurant> searchRestaurants(RestaurantSearchRequest request) {
@@ -36,5 +37,10 @@ public class RestaurantService {
         }
 
         return repository.findAll();
+    }
+    
+    public List<Restaurant> searchByDescription(String keyword) {
+
+        return repository.findByDescriptionContainingIgnoreCase(keyword);
     }
 }

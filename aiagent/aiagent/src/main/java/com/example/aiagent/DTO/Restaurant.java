@@ -24,9 +24,10 @@ public class Restaurant {
     private String name;
     private String type;
     private int price;
+    private String description;
     
     @Override
     public String toString() {
-        return "Name: " + name +", Type: " + type +", Price: " + price;
+        return "Name: " + name +", Type: " + type +", Price: " + price+", Description: " + description;
     }
 }
