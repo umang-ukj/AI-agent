@@ -26,11 +26,22 @@ public class RestaurantTool implements Tool {
     @Override
     public String execute(String query) {
         
-        RestaurantSearchRequest request = parameterExtractionService.extract(query);
-        
-        List<Restaurant> restaurants;
+    	RestaurantSearchRequest request =parameterExtractionService.extract(query);
 
-        restaurants =restaurantService.searchRestaurants(request);
+    	List<Restaurant> restaurants;
+
+    	if(request.getType() == null&& request.getBudget() == null) {
+
+    	    System.out.println("Using Semantic Search");
+
+    	    restaurants =restaurantService.semanticSearch(query);
+
+    	} else {
+
+    	    System.out.println("Using Structured Search");
+
+    	    restaurants =restaurantService.searchRestaurants(request);
+    	}
         
         if(restaurants.isEmpty()) {
             return """
