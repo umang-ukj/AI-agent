@@ -62,7 +62,11 @@ public class RestaurantService {
 
         for(Restaurant restaurant : restaurants) {
 
-            List<Double> descriptionEmbedding =embeddingService.generateEmbedding(restaurant.getDescription());
+            if(restaurant.getEmbedding() == null|| restaurant.getEmbedding().isBlank()) {
+                continue;
+            }
+
+            List<Double> descriptionEmbedding =embeddingService.parseEmbedding(restaurant.getEmbedding());
 
             double similarity =similarityService.cosineSimilarity(queryEmbedding,descriptionEmbedding);
 

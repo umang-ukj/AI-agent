@@ -23,11 +23,21 @@ public class OllamaLLMService implements LLMService {
 
     @Override
     public String generate(String prompt) {
+    	long start = System.currentTimeMillis();
 
-        Map<String, Object> requestBody =Map.of("model", ollamaModel,"prompt", prompt,"stream", false);
+    	Map<String, Object> requestBody = Map.of("model", ollamaModel,"prompt", prompt,"stream", false,"options",
+    			Map.of("num_predict", 60));
+        System.out.println("Model = " + ollamaModel);
+        System.out.println("Prompt Length = " + prompt.length());
 
         Map response =restTemplate.postForObject(ollamaApiUrl,requestBody,Map.class);
+        
+        System.out.println("LLM Call Time = "+ (System.currentTimeMillis() - start) + " ms");
 
-        return (String) response.get("response");
+        String result = (String) response.get("response");
+
+        System.out.println("Response Length = " + result.length());
+
+        return result;
     }
 }

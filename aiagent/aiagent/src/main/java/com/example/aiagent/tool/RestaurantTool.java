@@ -49,12 +49,17 @@ public class RestaurantTool implements Tool {
                    """;
         }
 
-        return """
-                Use ONLY the restaurants provided below.
+        StringBuilder sb = new StringBuilder();
 
-                Restaurant Data:
-                """
-                + restaurants
-                + "\n\n";
+        for (Restaurant restaurant : restaurants) {
+
+            sb.append("Name: ").append(restaurant.getName())
+              .append(", Type: ").append(restaurant.getType())
+              .append(", Price: ").append(restaurant.getPrice())
+              .append(", Description: ").append(restaurant.getDescription())
+              .append("\n");
+        }
+
+        return sb.toString();
     }
 }

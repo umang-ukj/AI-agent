@@ -29,56 +29,126 @@ public class ChatService {
 
         String userMessage = chatRequest.getMessage();
         
-        Intent intent =intentClassifierService.classify(userMessage);
-        
         String sessionId = chatRequest.getSessionId();
-        
-        //adding msg to in-memoryDB based on session ID
-        memoryService.addMessage(sessionId,"user", userMessage);
-        
-        //convo history retrival based on sessionID
-        List<String> history =memoryService.getConversation(sessionId);
 
-        Tool tool =toolRegistry.getTool(intent);
+        // Get history BEFORE adding current message
+        List<String> history = memoryService.getConversation(sessionId);
 
-        String toolContext = "";
-
-        if(tool != null) {
-            toolContext =tool.execute(userMessage);
+        if(history.size() > 6) {
+            history = history.subList(history.size() - 6,history.size());
         }
-        
-        if(toolContext.trim().equals("No matching restaurants found.")) {
+
+         // Build memory context for intent classification
+        Intent intent =intentClassifierService.classify(userMessage);
+
+        if(intent == Intent.GENERAL_CHAT&& intentClassifierService.isFollowUp(userMessage)) {
+
+            String memoryContext =String.join(" ", history);
+
+            intent =intentClassifierService.classify(memoryContext + " " + userMessage);
+        }
+
+     System.out.println("INTENT = " + intent);
+
+     // Now save current user message
+     memoryService.addMessage(sessionId,"user",userMessage);
+
+        Object tool = toolRegistry.getTool(intent);
+
+        if(tool == null) {
+
+            String aiText =llmService.generate(userMessage);
+
+            memoryService.addMessage(sessionId,"AI",aiText);
 
             ChatResponse response =new ChatResponse();
 
-            response.setResponse(toolContext);
+            response.setResponse(aiText);
 
             return response;
         }
         
-     // Get summary
-        String summary = memoryService.getSummary(sessionId);
+        String toolContext = "";
 
+        if(tool != null) {
+            toolContext =((Tool) tool).execute(userMessage);
+        }
+        
+        if(toolContext.startsWith("No matching")) {
+
+            ChatResponse response = new ChatResponse();
+            response.setResponse(toolContext);
+            return response;
+        }
+        
+        // Get summary
+        String summary = memoryService.getSummary(sessionId);
+        
+        System.out.println("\n=== HISTORY ===");
+        history.forEach(System.out::println);
+
+        System.out.println("\n=== SUMMARY ===");
+        System.out.println(summary);
         String fullPrompt;
 
         if(intent == Intent.RESTAURANT_SEARCH) {
 
-            fullPrompt =
-                    """
-                    Use ONLY the restaurant data provided below.
+        	fullPrompt =
+        	        """
+        	        Use ONLY the restaurant data below.
 
-                    Rules:
-                    - Recommend restaurants only from the provided data.
-                    - Do not invent restaurant names.
-                    - If matching restaurants exist, recommend them.
-                    - Mention their prices when relevant.
+        	        Current User Request:
+        	        """
+        	        + userMessage
+        	        + """
 
-                    Restaurant Data:
-                    """
-                    + toolContext
-                    + "\n\nUser Request:\n"
-                    + userMessage;
+        	        Restaurant Data:
+        	        """
+        	        + toolContext
+        	        + """
+
+        	        If the user asks for recommendations,
+        	        recommend restaurants.
+
+        	        If the user asks about a specific restaurant,
+        	        answer only that question.
+
+        	        Keep the answer under 3 lines.
+
+        	        Do not invent restaurants.
+        	        Do not invent prices.
+        	        Do not add introductions.
+        	        Do not add conclusions.
+        	        """;
+
         }
+        else if(intent == Intent.MENU_SEARCH) {
+
+        	fullPrompt =
+        	        """
+        	        Use ONLY the menu items provided below.
+
+        	        Current User Request:
+        	        """
+        	        + userMessage
+        	        + """
+
+        	        Menu Data:
+        	        """
+        	        + toolContext
+        	        + """
+
+        	        Return at most 3 matching items.
+
+        	        Format:
+        	        1. Item Name - Price - short reason
+
+        	        Do not invent items.
+        	        Do not invent prices.
+        	        Do not add introductions.
+        	        Do not add conclusions.
+        	        """;
+        	}
         else {
 
             fullPrompt =

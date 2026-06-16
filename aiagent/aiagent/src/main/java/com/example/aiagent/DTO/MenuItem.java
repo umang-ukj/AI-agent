@@ -1,5 +1,6 @@
 package com.example.aiagent.DTO;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,7 +18,7 @@ import lombok.ToString;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = {"embedding", "restaurant"})
 public class MenuItem {
 
     @Id
@@ -29,6 +30,9 @@ public class MenuItem {
     private Integer price;
 
     private String description;
+    
+    @Column(columnDefinition = "TEXT")
+    private String embedding;
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id")

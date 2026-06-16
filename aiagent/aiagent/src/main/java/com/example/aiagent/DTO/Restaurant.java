@@ -1,5 +1,6 @@
 package com.example.aiagent.DTO;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,6 +26,8 @@ public class Restaurant {
     private String type;
     private int price;
     private String description;
+    @Column(columnDefinition = "LONGTEXT")
+    private String embedding;
     
     @Override
     public String toString() {

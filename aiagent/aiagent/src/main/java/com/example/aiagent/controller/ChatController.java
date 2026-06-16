@@ -14,6 +14,7 @@ import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.service.ChatService;
+import com.example.aiagent.service.EmbeddingMigrationService;
 import com.example.aiagent.service.RestaurantService;
 
 
@@ -25,6 +26,9 @@ public class ChatController {
     private ChatService chatService;
     @Autowired
     private RestaurantService restaurantService;
+    
+    @Autowired
+    private EmbeddingMigrationService embeddingMigrationService;
 
     @PostMapping
     public ChatResponse response(@RequestBody ChatRequest chatRequest) {
@@ -41,5 +45,13 @@ public class ChatController {
     public Object semanticSearch(@RequestParam String query) {
 
         return restaurantService.semanticSearch(query);
+    }
+    
+    @GetMapping("/generate-embeddings")
+    public String generateEmbeddings() {
+
+        embeddingMigrationService.generateEmbeddings();
+
+        return "done";
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.aiagent.service.EmbeddingMigrationService;
 import com.example.aiagent.service.EmbeddingService;
 import com.example.aiagent.service.SimilarityService;
 
@@ -17,6 +18,10 @@ public class EmbeddingController {
 
     @Autowired
     private EmbeddingService embeddingService;
+    
+    @Autowired
+    private EmbeddingMigrationService embeddingMigrationService;
+    
     @Autowired
     private SimilarityService similarityService;
 
@@ -35,5 +40,11 @@ public class EmbeddingController {
 
         return similarityService.cosineSimilarity(e1, e2);
     }
-    
+    @GetMapping("/generate-restaurant-embeddings")
+    public String generateRestaurantEmbeddings() {
+
+        embeddingMigrationService.generateRestaurantEmbeddings();
+
+        return "Restaurant embeddings generated";
+    }
 }
