@@ -1,0 +1,92 @@
+package com.example.aiagent.tool;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.example.aiagent.DTO.Intent;
+import com.example.aiagent.DTO.MenuItem;
+import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.repository.MenuItemRepository;
+import com.example.aiagent.repository.RestaurantRepository;
+import com.example.aiagent.service.MenuItemService;
+
+@Component
+public class RestaurantMenuTool implements Tool {
+
+    @Autowired
+    private MenuItemService menuItemService;
+    
+    @Autowired
+    private RestaurantRepository restaurantRepository;
+
+    @Autowired
+    private MenuItemRepository menuItemRepository;
+
+    @Override
+    public String execute(String query) {
+
+        String lower = query.toLowerCase();
+
+        // Menu listing requests
+        if(lower.contains("other dishes")|| lower.contains("menu")|| lower.contains("serve")) {
+
+            List<Restaurant> restaurants =restaurantRepository.findAll();
+
+            Restaurant matchedRestaurant = null;
+
+            for(Restaurant restaurant : restaurants) {
+
+                if(lower.contains(restaurant.getName().toLowerCase())) {
+
+                    matchedRestaurant = restaurant;
+                    break;
+                }
+            }
+
+            if(matchedRestaurant != null) {
+
+                List<MenuItem> items =menuItemRepository.findByRestaurant(matchedRestaurant);
+
+                StringBuilder result =new StringBuilder();
+
+                result.append("Restaurant: ").append(matchedRestaurant.getName()).append("\n\n");
+
+                result.append("Menu Items:\n");
+
+                for(MenuItem item : items) {
+
+                    result.append(item.getName()).append(" - ").append(item.getPrice()).append("\n");
+                }
+
+                return result.toString();
+            }
+        }
+
+        // Restaurant lookup by menu item
+        List<MenuItem> items =menuItemService.semanticSearch(query);
+
+        if(items.isEmpty()) {
+            return "No matching restaurant found.";
+        }
+
+        MenuItem item = items.get(0);
+
+        Restaurant restaurant =item.getRestaurant();
+
+        return """
+                Restaurant: %s
+                Menu Item: %s
+                Price: %s
+                """
+                .formatted(restaurant.getName(),item.getName(),item.getPrice());
+    }
+    
+	@Override
+	public Intent supportedIntent() {
+		
+		return Intent.RESTAURANT_MENU_QUERY;
+	}
+}

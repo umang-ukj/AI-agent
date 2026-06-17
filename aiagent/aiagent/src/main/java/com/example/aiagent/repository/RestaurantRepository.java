@@ -1,6 +1,7 @@
 package com.example.aiagent.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,6 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     List<Restaurant> findByTypeAndPriceLessThanEqual(String type,Integer price);
     
     List<Restaurant> findByDescriptionContainingIgnoreCase(String keyword);
+    
+    Optional<Restaurant> findByNameContainingIgnoreCase(String name);
 }

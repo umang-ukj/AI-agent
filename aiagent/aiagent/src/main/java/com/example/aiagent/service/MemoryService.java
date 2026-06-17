@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.example.aiagent.DTO.ConversationContext;
 
 //to store conversations in in-memory DB temporarily till we work on redis DB
 //stores conversation history based on sessionId. we can retrieve chats also based on sessionId
@@ -17,6 +20,7 @@ public class MemoryService {
 	private SummarizationService summarizationService;
 	private final Map<String, List<String>> memory=new HashMap<>();
 	private final Map<String, String> summaries = new HashMap<>();
+	private final Map<String, ConversationContext> contexts= new ConcurrentHashMap<>();
 	
 	public void addMessage(String sessionId, String role, String message) {
 		memory.computeIfAbsent(sessionId, k -> new ArrayList<>()).add(role + ": " + message);
@@ -27,7 +31,7 @@ public class MemoryService {
 			//summarizing msgs 
 			String summary = summarizationService.summarize(messages);
 
-			updateSummary(sessionId,summary);
+			saveSummary(sessionId,summary);
 			
 			//summary + recent messages
 		    memory.put(sessionId,new ArrayList<>(messages.subList(messages.size() - 4,messages.size())));
@@ -39,22 +43,29 @@ public class MemoryService {
 	    List<String> history =memory.getOrDefault(sessionId,new ArrayList<>());
 
 	    if(history.size() > 6) {
-	        return history.subList(history.size() - 6,history.size());
+	        return new ArrayList<>(history.subList(history.size() - 6,history.size()));
 	    }
-	    
 	    return history;
 	}
 	
 	//to get summary
 	public String getSummary(String sessionId) {
-
 	    return summaries.getOrDefault(sessionId,"");
 	}
 	
     //to store summary
-	public void updateSummary(String sessionId,String summary) {
-
+	public void saveSummary(String sessionId,String summary) {
 	    summaries.put(sessionId,summary);
+	}
+	
+	public ConversationContext getContext(String sessionId) {
+
+	    return contexts.computeIfAbsent(sessionId,id -> new ConversationContext());
+	}
+	
+	public void saveContext(String sessionId,ConversationContext context) {
+
+	    contexts.put(sessionId,context);
 	}
 
 }

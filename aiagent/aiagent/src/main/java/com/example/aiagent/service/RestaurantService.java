@@ -14,67 +14,71 @@ import com.example.aiagent.repository.RestaurantRepository;
 @Service
 public class RestaurantService {
 
-    @Autowired
-    private RestaurantRepository repository;
-    
-    @Autowired
-    private EmbeddingService embeddingService;
+	@Autowired
+	private RestaurantRepository repository;
+	
+	@Autowired
+	private RestaurantEmbeddingCacheService restaurantEmbeddingCacheService;
 
-    @Autowired
-    private SimilarityService similarityService;
+	@Autowired
+	private EmbeddingCacheService embeddingCacheService;
 
-    public List<Restaurant> getVegRestaurants() {
+	@Autowired
+	private SimilarityService similarityService;
 
-        return repository.findByType("Vegetarian");
-    }
-    
-    public List<Restaurant> getVegRestaurantsUnderBudget(Integer budget) {
-    	
-        return repository.findByTypeAndPriceLessThanEqual("Vegetarian",budget);
-    }
-    public List<Restaurant> searchRestaurants(RestaurantSearchRequest request) {
+	public List<Restaurant> getVegRestaurants() {
 
-        if(request.getBudget() != null && request.getType() != null) {
+		return repository.findByType("Vegetarian");
+	}
 
-            return repository.findByTypeAndPriceLessThanEqual(request.getType(),request.getBudget());
-        }
+	public List<Restaurant> getVegRestaurantsUnderBudget(Integer budget) {
 
-        if(request.getType() != null) {
+		return repository.findByTypeAndPriceLessThanEqual("Vegetarian", budget);
+	}
 
-            return repository.findByType(request.getType());
-        }
+	public List<Restaurant> searchRestaurants(RestaurantSearchRequest request) {
 
-        return repository.findAll();
-    }
-    
-    public List<Restaurant> searchByDescription(String keyword) {
+		if (request.getBudget() != null && request.getType() != null) {
 
-        return repository.findByDescriptionContainingIgnoreCase(keyword);
-    }
-    
-    public List<Restaurant> semanticSearch(String query) {
+			return repository.findByTypeAndPriceLessThanEqual(request.getType(), request.getBudget());
+		}
 
-        List<Double> queryEmbedding =embeddingService.generateEmbedding(query);
+		if (request.getType() != null) {
 
-        List<RestaurantScore> scores =new ArrayList<>();
+			return repository.findByType(request.getType());
+		}
 
-        List<Restaurant> restaurants =repository.findAll();
+		return repository.findAll();
+	}
 
-        for(Restaurant restaurant : restaurants) {
+	public List<Restaurant> searchByDescription(String keyword) {
 
-            if(restaurant.getEmbedding() == null|| restaurant.getEmbedding().isBlank()) {
-                continue;
-            }
+		return repository.findByDescriptionContainingIgnoreCase(keyword);
+	}
 
-            List<Double> descriptionEmbedding =embeddingService.parseEmbedding(restaurant.getEmbedding());
+	public List<Restaurant> semanticSearch(String query) {
 
-            double similarity =similarityService.cosineSimilarity(queryEmbedding,descriptionEmbedding);
+		List<Double> queryEmbedding = embeddingCacheService.getEmbedding(query);
 
-            scores.add(new RestaurantScore(restaurant,similarity));
-        }
+		List<RestaurantScore> scores = new ArrayList<>();
 
-        scores.sort((a,b) ->Double.compare(b.getScore(),a.getScore()));
+		List<Restaurant> restaurants = repository.findAll();
 
-        return scores.stream().limit(3).map(RestaurantScore::getRestaurant).toList();
-    }
+		for (Restaurant restaurant : restaurants) {
+
+			if (restaurant.getEmbedding() == null || restaurant.getEmbedding().isBlank()) {
+				continue;
+			}
+
+			List<Double> descriptionEmbedding = restaurantEmbeddingCacheService.getEmbedding(restaurant.getId());
+
+			double similarity = similarityService.cosineSimilarity(queryEmbedding, descriptionEmbedding);
+
+			scores.add(new RestaurantScore(restaurant, similarity));
+		}
+
+		scores.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
+
+		return scores.stream().limit(3).map(RestaurantScore::getRestaurant).toList();
+	}
 }

@@ -3,5 +3,8 @@ package com.example.aiagent.DTO;
 public enum Intent {
     RESTAURANT_SEARCH,
     GENERAL_CHAT,
-    MENU_SEARCH
+    MENU_SEARCH,
+    RESTAURANT_MENU_QUERY,
+    MENU_LOOKUP,
+    PRICE_LOOKUP
 }
