@@ -1,5 +1,7 @@
 package com.example.aiagent.DTO;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +13,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ConversationContext {
 
-    private String restaurantName;
-    private String menuItemName;
+	private String restaurantName;
 
+	private String menuItemName;
+
+	private LocalDateTime lastUpdated;
 }
