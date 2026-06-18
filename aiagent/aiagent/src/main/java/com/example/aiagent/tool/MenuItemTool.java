@@ -10,16 +10,12 @@ import com.example.aiagent.DTO.MenuItem;
 import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.service.MenuItemService;
-import com.example.aiagent.service.QueryUnderstandingService;
 
 @Component
 public class MenuItemTool implements Tool {
 
 	@Autowired
 	private MenuItemService menuItemService;
-
-	@Autowired
-	private QueryUnderstandingService queryUnderstandingService;
 
 	@Override
 	public Intent supportedIntent() {
@@ -29,16 +25,7 @@ public class MenuItemTool implements Tool {
 	@Override
 	public String execute(String query) {
 
-		QueryContext context = queryUnderstandingService.extract(query);
-
-		List<MenuItem> items = menuItemService.structuredSearch(context, null);
-
-		if (items.isEmpty()) {
-
-			return "No matching menu item found.";
-		}
-
-		return buildResponse(items);
+		return execute(query, new QueryContext());
 	}
 
 	public String execute(String query, Restaurant restaurant) {
