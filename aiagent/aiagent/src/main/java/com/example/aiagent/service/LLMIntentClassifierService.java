@@ -19,11 +19,36 @@ public class LLMIntentClassifierService {
 				Return ONLY ONE of:
 
 				RESTAURANT_SEARCH
-				MENU_SEARCH
-				MENU_LOOKUP
-				PRICE_LOOKUP
 				RESTAURANT_MENU_QUERY
+				MENU_SEARCH
 				GENERAL_CHAT
+
+				Rules:
+
+				RESTAURANT_SEARCH:
+				- find restaurants
+				- suggest restaurants
+				- veg restaurants
+				- non veg restaurants
+				- restaurants under budget
+
+				RESTAURANT_MENU_QUERY:
+				- show menu of a restaurant
+				- dishes available in a restaurant
+				- what does restaurant serve
+				- more dishes from a restaurant
+
+				MENU_SEARCH:
+				- paneer dishes
+				- chicken dishes
+				- high protein meals
+				- cheapest food item
+				- food item under budget
+
+				GENERAL_CHAT:
+				- greetings
+				- jokes
+				- general questions
 
 				User Request:
 				""" + userMessage;

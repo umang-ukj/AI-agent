@@ -11,18 +11,6 @@ public Intent classify(String message) {
 
     String lower = message.toLowerCase();
 
-    // PRICE LOOKUP
-
-    if (containsAny(lower,
-            "price",
-            "cost",
-            "cheap",
-            "cheapest",
-            "expensive")) {
-
-        return Intent.PRICE_LOOKUP;
-    }
-
     // RESTAURANT -> MENU RELATION
 
     if (lower.contains("restaurant")
@@ -30,22 +18,6 @@ public Intent classify(String message) {
             || lower.contains("serves"))) {
 
         return Intent.RESTAURANT_MENU_QUERY;
-    }
-
-    // MENU LOOKUP
-
-    if (containsAny(lower,
-            "dish",
-            "dishes",
-            "food",
-            "foods",
-            "meal",
-            "meals",
-            "menu",
-            "item",
-            "items")) {
-
-        return Intent.MENU_LOOKUP;
     }
 
     // MENU SEARCH

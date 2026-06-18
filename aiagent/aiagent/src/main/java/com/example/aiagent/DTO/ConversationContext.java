@@ -14,8 +14,9 @@ import lombok.Setter;
 public class ConversationContext {
 
 	private String restaurantName;
-
 	private String menuItemName;
-
 	private LocalDateTime lastUpdated;
+	private String dietType;
+	private String fitnessGoal;
+	private Integer budget;
 }

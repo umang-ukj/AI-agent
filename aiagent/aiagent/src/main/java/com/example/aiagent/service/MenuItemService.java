@@ -114,15 +114,17 @@ public class MenuItemService {
 
 			String food = context.getFoodItem().toLowerCase();
 
-			menuItems = menuItems.stream().filter(item -> item.getName().toLowerCase().contains(food)).toList();
+			menuItems = menuItems.stream()
+					.filter(item -> item.getRestaurant().getType().equalsIgnoreCase(context.getRestaurantType()))
+					.toList();
 		}
 
 		if (context.getRestaurantType() != null) {
 
-			String restaurantType = context.getRestaurantType().toLowerCase();
+			String restaurantType = context.getRestaurantType();
 
 			menuItems = menuItems.stream()
-					.filter(item -> item.getRestaurant().getType().toLowerCase().contains(restaurantType)).toList();
+					.filter(item -> item.getRestaurant().getType().equalsIgnoreCase(restaurantType)).toList();
 		}
 
 		if (context.getMaxPrice() != null) {

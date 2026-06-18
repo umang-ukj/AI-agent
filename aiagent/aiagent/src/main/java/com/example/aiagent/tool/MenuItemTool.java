@@ -64,4 +64,16 @@ public class MenuItemTool implements Tool {
 		return menuData.toString();
 	}
 
+	@Override
+	public String execute(String query, QueryContext context) {
+
+		List<MenuItem> items = menuItemService.structuredSearch(context, null);
+
+		if (items.isEmpty()) {
+			return "No matching menu item found.";
+		}
+
+		return buildResponse(items);
+	}
+
 }

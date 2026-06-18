@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.example.aiagent.DTO.AgentAnalysis;
 import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.ConversationContext;
@@ -23,15 +25,6 @@ public class ChatService {
 	private LLMProvider llmProvider;
 
 	@Autowired
-	private QueryUnderstandingService queryUnderstandingService;
-
-	@Autowired
-	private LLMIntentClassifierService llmIntentClassifierService;
-
-	@Autowired
-	private IntentClassifierService intentClassifierService;
-
-	@Autowired
 	private MemoryService memoryService;
 
 	@Autowired
@@ -43,9 +36,16 @@ public class ChatService {
 	@Autowired
 	private MenuItemTool menuItemTool;
 
+	@Autowired
+	private AgentAnalysisService agentAnalysisService;
+
 	public ChatResponse getResponse(ChatRequest chatRequest) {
 
 		String userMessage = chatRequest.getMessage();
+
+		AgentAnalysis analysis = agentAnalysisService.analyze(userMessage);
+
+		System.out.println("AGENT ANALYSIS = " + analysis);
 
 		String lower = userMessage.toLowerCase();
 
@@ -53,9 +53,76 @@ public class ChatService {
 
 		ConversationContext context = memoryService.getContext(sessionId);
 
-		QueryContext queryContext = queryUnderstandingService.extract(userMessage);
+		boolean preferenceUpdated = false;
+
+		if (analysis.isMemoryUpdate()) {
+
+			if (analysis.getDietType() != null) {
+				context.setDietType(analysis.getDietType());
+				preferenceUpdated = true;
+			}
+
+			if (analysis.getFitnessGoal() != null) {
+				context.setFitnessGoal(analysis.getFitnessGoal());
+				preferenceUpdated = true;
+			}
+
+			if (analysis.getBudget() != null) {
+				context.setBudget(analysis.getBudget());
+				preferenceUpdated = true;
+			}
+		}
+
+		if (preferenceUpdated) {
+
+			memoryService.saveContext(sessionId, context);
+
+			System.out.println("Stored Diet = " + context.getDietType());
+			System.out.println("Stored Goal = " + context.getFitnessGoal());
+			System.out.println("Stored Budget = " + context.getBudget());
+
+			ChatResponse response = new ChatResponse();
+
+			StringBuilder ack = new StringBuilder("Got it. I'll remember");
+
+			if (analysis.getDietType() != null) {
+				ack.append(" that you prefer ").append(analysis.getDietType().toLowerCase()).append(" food");
+			}
+
+			if (analysis.getFitnessGoal() != null) {
+				ack.append(". I'll prioritize ").append(analysis.getFitnessGoal().toLowerCase()).append(" meals");
+			}
+
+			if (analysis.getBudget() != null) {
+				ack.append(". Budget noted: ").append(analysis.getBudget());
+			}
+
+			response.setResponse(ack.toString());
+
+			return response;
+		}
+
+		QueryContext queryContext = new QueryContext();
+
+		queryContext.setFoodItem(analysis.getFoodItem());
+
+		queryContext.setRestaurantType(analysis.getDietType());
+
+		queryContext.setMaxPrice(analysis.getBudget());
 
 		System.out.println(queryContext);
+
+		if (queryContext.getRestaurantType() == null && context.getDietType() != null) {
+
+			queryContext.setRestaurantType(context.getDietType());
+		}
+
+		if (queryContext.getMaxPrice() == null && context.getBudget() != null) {
+
+			queryContext.setMaxPrice(context.getBudget());
+		}
+
+		System.out.println("Final QueryContext = " + queryContext);
 
 		// Resolve follow-up references using conversation context
 
@@ -87,29 +154,14 @@ public class ChatService {
 			history = new ArrayList<>(history.subList(history.size() - 6, history.size()));
 		}
 
-		// Build memory context for intent classification
 		Intent intent;
 
-		if (context.getRestaurantName() != null && isMenuFollowUp(userMessage)) {
-			System.out.println("FOLLOW UP MENU QUESTION DETECTED");
-			intent = Intent.MENU_LOOKUP;
+		intent = analysis.getIntent();
 
-		} else {
-			intent = intentClassifierService.classify(userMessage);
+		if (intent == Intent.GENERAL_CHAT && context.getRestaurantName() != null
+				&& isRestaurantMenuFollowUp(userMessage)) {
 
-			if (intent == Intent.GENERAL_CHAT) {
-
-				System.out.println("FALLING BACK TO LLM CLASSIFIER");
-
-				intent = llmIntentClassifierService.classify(userMessage);
-			}
-		}
-
-		if (intent == Intent.GENERAL_CHAT && intentClassifierService.isFollowUp(userMessage)) {
-
-			String memoryContext = String.join(" ", history);
-
-			intent = intentClassifierService.classify(memoryContext + " " + userMessage);
+			intent = Intent.RESTAURANT_MENU_QUERY;
 		}
 
 		System.out.println("INTENT = " + intent);
@@ -138,7 +190,7 @@ public class ChatService {
 
 		if (tool != null) {
 
-			if (intent == Intent.MENU_LOOKUP && context.getRestaurantName() != null) {
+			if (intent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() != null) {
 
 				Optional<Restaurant> restaurantOpt = restaurantRepository
 						.findByNameContainingIgnoreCase(context.getRestaurantName());
@@ -149,12 +201,12 @@ public class ChatService {
 
 				} else {
 
-					toolContext = ((Tool) tool).execute(userMessage);
+					toolContext = ((Tool) tool).execute(userMessage, queryContext);
 				}
 
 			} else {
 
-				toolContext = ((Tool) tool).execute(userMessage);
+				toolContext = ((Tool) tool).execute(userMessage, queryContext);
 			}
 
 			System.out.println("TOOL = " + tool.getClass().getSimpleName());
@@ -163,21 +215,38 @@ public class ChatService {
 		}
 
 		// Save restaurant into conversation context
+		// Save restaurant context only when exactly one restaurant is returned
 		if (toolContext.contains("Restaurant:")) {
+
+			List<String> restaurants = new ArrayList<>();
+
 			String[] lines = toolContext.split("\n");
+
 			for (String line : lines) {
+
 				if (line.startsWith("Restaurant:")) {
 
 					String restaurantName = line.replace("Restaurant:", "").trim();
 
-					context.setRestaurantName(restaurantName);
-
-					memoryService.saveContext(sessionId, context);
-
-					System.out.println("Saved Restaurant Context = " + restaurantName);
-
-					break;
+					if (!restaurants.contains(restaurantName)) {
+						restaurants.add(restaurantName);
+					}
 				}
+			}
+
+			if (restaurants.size() == 1) {
+
+				String restaurantName = restaurants.get(0);
+
+				context.setRestaurantName(restaurantName);
+
+				memoryService.saveContext(sessionId, context);
+
+				System.out.println("Saved Restaurant Context = " + restaurantName);
+
+			} else {
+
+				System.out.println("Skipping restaurant context save. Restaurants found = " + restaurants.size());
 			}
 		}
 
@@ -297,19 +366,17 @@ public class ChatService {
 		return chatResponse;
 	}
 
-	private boolean isMenuFollowUp(String message) {
+	private boolean isRestaurantMenuFollowUp(String message) {
 
 		String lower = message.toLowerCase();
 
-		return lower.contains("other") || lower.contains("more") || lower.contains("else") || lower.contains("dish")
-				|| lower.contains("dishes") || lower.contains("food") || lower.contains("foods")
-				|| lower.contains("meal") || lower.contains("meals") || lower.contains("item")
-				|| lower.contains("items") || lower.contains("menu");
+		return lower.contains("other dishes") || lower.contains("more dishes") || lower.contains("full menu")
+				|| lower.contains("what else") || lower.contains("show menu");
 	}
 
 	private boolean shouldSkipLLM(Intent intent) {
 
-		return intent == Intent.RESTAURANT_SEARCH || intent == Intent.MENU_SEARCH || intent == Intent.PRICE_LOOKUP
-				|| intent == Intent.RESTAURANT_MENU_QUERY || intent == Intent.MENU_LOOKUP;
+		return intent == Intent.RESTAURANT_SEARCH || intent == Intent.MENU_SEARCH
+				|| intent == Intent.RESTAURANT_MENU_QUERY;
 	}
 }

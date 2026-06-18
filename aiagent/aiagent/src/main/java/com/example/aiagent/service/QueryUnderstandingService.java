@@ -34,6 +34,15 @@ public class QueryUnderstandingService {
 
 		String response = openAi.generate(prompt, 0);
 
+		response = response.trim();
+
+		int start = response.indexOf("{");
+		int end = response.lastIndexOf("}");
+
+		if (start >= 0 && end >= 0) {
+			response = response.substring(start, end + 1);
+		}
+
 		System.out.println("QUERY EXTRACTION RESPONSE = " + response);
 
 		JSONObject json = new JSONObject(response);

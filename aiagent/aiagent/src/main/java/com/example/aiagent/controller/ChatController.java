@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.aiagent.DTO.AgentAnalysis;
 import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.service.AgentAnalysisService;
 import com.example.aiagent.service.ChatService;
 import com.example.aiagent.service.EmbeddingMigrationService;
 import com.example.aiagent.service.RestaurantService;
@@ -25,6 +27,9 @@ public class ChatController {
 	private ChatService chatService;
 	@Autowired
 	private RestaurantService restaurantService;
+	
+	@Autowired
+	private AgentAnalysisService agentAnalysisService;
 
 	@Autowired
 	private EmbeddingMigrationService embeddingMigrationService;
@@ -52,6 +57,14 @@ public class ChatController {
 		embeddingMigrationService.generateEmbeddings();
 
 		return "done";
+	}
+	
+	@PostMapping("/analyze")
+	public AgentAnalysis analyze(
+	        @RequestBody ChatRequest request) {
+
+	    return agentAnalysisService
+	            .analyze(request.getMessage());
 	}
 
 }
