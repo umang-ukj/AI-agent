@@ -10,6 +10,7 @@ import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.ConversationContext;
 import com.example.aiagent.DTO.Intent;
+import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.repository.RestaurantRepository;
 import com.example.aiagent.tool.MenuItemTool;
@@ -19,7 +20,13 @@ import com.example.aiagent.tool.Tool;
 public class ChatService {
 
 	@Autowired
-	private LLMService llmService;
+	private LLMProvider llmProvider;
+
+	@Autowired
+	private QueryUnderstandingService queryUnderstandingService;
+
+	@Autowired
+	private LLMIntentClassifierService llmIntentClassifierService;
 
 	@Autowired
 	private IntentClassifierService intentClassifierService;
@@ -45,6 +52,10 @@ public class ChatService {
 		String sessionId = chatRequest.getSessionId();
 
 		ConversationContext context = memoryService.getContext(sessionId);
+
+		QueryContext queryContext = queryUnderstandingService.extract(userMessage);
+
+		System.out.println(queryContext);
 
 		// Resolve follow-up references using conversation context
 
@@ -85,6 +96,13 @@ public class ChatService {
 
 		} else {
 			intent = intentClassifierService.classify(userMessage);
+
+			if (intent == Intent.GENERAL_CHAT) {
+
+				System.out.println("FALLING BACK TO LLM CLASSIFIER");
+
+				intent = llmIntentClassifierService.classify(userMessage);
+			}
 		}
 
 		if (intent == Intent.GENERAL_CHAT && intentClassifierService.isFollowUp(userMessage)) {
@@ -105,7 +123,7 @@ public class ChatService {
 
 			System.out.println("NO TOOL FOUND FOR INTENT = " + intent);
 
-			String aiText = llmService.generate(userMessage);
+			String aiText = llmProvider.getService().generate(userMessage);
 
 			memoryService.addMessage(sessionId, "AI", aiText);
 
@@ -164,13 +182,19 @@ public class ChatService {
 		}
 
 		if (toolContext.startsWith("No matching")) {
+
 			ChatResponse response = new ChatResponse();
 			response.setResponse(toolContext);
+
 			return response;
 		}
-		if (intent == Intent.MENU_LOOKUP || intent == Intent.PRICE_LOOKUP) {
-			System.out.println("Tool Response = " + toolContext);
+
+		if (shouldSkipLLM(intent)) {
+
+			System.out.println("RETURNING TOOL RESPONSE DIRECTLY");
+
 			memoryService.addMessage(sessionId, "AI", toolContext);
+
 			ChatResponse response = new ChatResponse();
 			response.setResponse(toolContext);
 
@@ -245,15 +269,6 @@ public class ChatService {
 					Do not add introductions.
 					Do not add conclusions.
 					""";
-		} else if (intent == Intent.RESTAURANT_MENU_QUERY) {
-
-			memoryService.addMessage(sessionId, "AI", toolContext);
-
-			ChatResponse response = new ChatResponse();
-
-			response.setResponse(toolContext);
-
-			return response;
 		} else {
 
 			fullPrompt = """
@@ -272,7 +287,7 @@ public class ChatService {
 		System.out.println(fullPrompt);
 		System.out.println("============================\n");
 
-		String aiText = llmService.generate(fullPrompt);
+		String aiText = llmProvider.getService().generate(fullPrompt);
 		memoryService.addMessage(sessionId, "AI", aiText);
 
 		// Return DTO
@@ -290,5 +305,11 @@ public class ChatService {
 				|| lower.contains("dishes") || lower.contains("food") || lower.contains("foods")
 				|| lower.contains("meal") || lower.contains("meals") || lower.contains("item")
 				|| lower.contains("items") || lower.contains("menu");
+	}
+
+	private boolean shouldSkipLLM(Intent intent) {
+
+		return intent == Intent.RESTAURANT_SEARCH || intent == Intent.MENU_SEARCH || intent == Intent.PRICE_LOOKUP
+				|| intent == Intent.RESTAURANT_MENU_QUERY || intent == Intent.MENU_LOOKUP;
 	}
 }

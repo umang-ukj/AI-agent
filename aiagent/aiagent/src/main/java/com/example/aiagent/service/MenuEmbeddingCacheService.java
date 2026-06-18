@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.aiagent.DTO.MenuItem;
-import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.repository.MenuItemRepository;
-import com.example.aiagent.repository.RestaurantRepository;
-
 import jakarta.annotation.PostConstruct;
 
 @Service

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.aiagent.DTO.MenuItem;
 import com.example.aiagent.DTO.MenuItemScore;
+import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.repository.MenuItemRepository;
 
@@ -78,6 +79,61 @@ public class MenuItemService {
 
 		scores.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
 
-		return scores.stream().limit(3).map(MenuItemScore::getMenuItem).toList();
+		double bestScore = scores.get(0).getScore();
+
+		double threshold = bestScore * 0.95;
+
+		System.out.println("Threshold = " + threshold);
+
+		scores.forEach(score -> System.out.println(score.getMenuItem().getName() + " -> " + score.getScore()));
+
+		return scores.stream().filter(score -> score.getScore() >= threshold).limit(5).map(MenuItemScore::getMenuItem)
+				.toList();
+	}
+
+	public List<MenuItem> structuredSearch(QueryContext context, Restaurant restaurant) {
+
+		List<MenuItem> menuItems;
+
+		if (restaurant != null) {
+
+			menuItems = menuItemRepository.findByRestaurant(restaurant);
+
+		} else {
+
+			menuItems = menuItemRepository.findAll();
+		}
+
+		System.out.println("Applying Food Filter = " + context.getFoodItem());
+
+		System.out.println("Applying Restaurant Type Filter = " + context.getRestaurantType());
+
+		System.out.println("Applying Max Price Filter = " + context.getMaxPrice());
+
+		if (context.getFoodItem() != null) {
+
+			String food = context.getFoodItem().toLowerCase();
+
+			menuItems = menuItems.stream().filter(item -> item.getName().toLowerCase().contains(food)).toList();
+		}
+
+		if (context.getRestaurantType() != null) {
+
+			String restaurantType = context.getRestaurantType().toLowerCase();
+
+			menuItems = menuItems.stream()
+					.filter(item -> item.getRestaurant().getType().toLowerCase().contains(restaurantType)).toList();
+		}
+
+		if (context.getMaxPrice() != null) {
+
+			Integer maxPrice = context.getMaxPrice();
+
+			menuItems = menuItems.stream().filter(item -> item.getPrice() <= maxPrice).toList();
+		}
+
+		System.out.println("Structured Search Results = " + menuItems.size());
+
+		return menuItems;
 	}
 }

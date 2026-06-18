@@ -17,41 +17,41 @@ import com.example.aiagent.service.ChatService;
 import com.example.aiagent.service.EmbeddingMigrationService;
 import com.example.aiagent.service.RestaurantService;
 
-
 @RestController
 @RequestMapping("/api/generate")
 public class ChatController {
 
-    @Autowired
-    private ChatService chatService;
-    @Autowired
-    private RestaurantService restaurantService;
-    
-    @Autowired
-    private EmbeddingMigrationService embeddingMigrationService;
+	@Autowired
+	private ChatService chatService;
+	@Autowired
+	private RestaurantService restaurantService;
 
-    @PostMapping
-    public ChatResponse response(@RequestBody ChatRequest chatRequest) {
+	@Autowired
+	private EmbeddingMigrationService embeddingMigrationService;
 
-        return chatService.getResponse(chatRequest);
-    }
-    
-    @GetMapping("/restaurants")
-    public List<Restaurant> getRestaurants() {
-        return restaurantService.getVegRestaurants();
-    }
-    
-    @GetMapping("/semantic")
-    public Object semanticSearch(@RequestParam String query) {
+	@PostMapping
+	public ChatResponse response(@RequestBody ChatRequest chatRequest) {
 
-        return restaurantService.semanticSearch(query);
-    }
-    
-    @GetMapping("/generate-embeddings")
-    public String generateEmbeddings() {
+		return chatService.getResponse(chatRequest);
+	}
 
-        embeddingMigrationService.generateEmbeddings();
+	@GetMapping("/restaurants")
+	public List<Restaurant> getRestaurants() {
+		return restaurantService.getVegRestaurants();
+	}
 
-        return "done";
-    }
+	@GetMapping("/semantic")
+	public Object semanticSearch(@RequestParam String query) {
+
+		return restaurantService.semanticSearch(query);
+	}
+
+	@GetMapping("/generate-embeddings")
+	public String generateEmbeddings() {
+
+		embeddingMigrationService.generateEmbeddings();
+
+		return "done";
+	}
+
 }

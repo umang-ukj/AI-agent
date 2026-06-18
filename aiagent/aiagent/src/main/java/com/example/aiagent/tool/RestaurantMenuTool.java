@@ -1,92 +1,107 @@
 package com.example.aiagent.tool;
 
 import java.util.List;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.MenuItem;
+import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.repository.MenuItemRepository;
 import com.example.aiagent.repository.RestaurantRepository;
 import com.example.aiagent.service.MenuItemService;
+import com.example.aiagent.service.QueryUnderstandingService;
 
 @Component
 public class RestaurantMenuTool implements Tool {
 
-    @Autowired
-    private MenuItemService menuItemService;
-    
-    @Autowired
-    private RestaurantRepository restaurantRepository;
+	@Autowired
+	private MenuItemService menuItemService;
 
-    @Autowired
-    private MenuItemRepository menuItemRepository;
+	@Autowired
+	private RestaurantRepository restaurantRepository;
 
-    @Override
-    public String execute(String query) {
+	@Autowired
+	private QueryUnderstandingService queryUnderstandingService;
 
-        String lower = query.toLowerCase();
+	@Autowired
+	private MenuItemRepository menuItemRepository;
 
-        // Menu listing requests
-        if(lower.contains("other dishes")|| lower.contains("menu")|| lower.contains("serve")) {
+	@Override
+	public String execute(String query) {
 
-            List<Restaurant> restaurants =restaurantRepository.findAll();
+		String lower = query.toLowerCase();
 
-            Restaurant matchedRestaurant = null;
+		// Menu listing requests
+		if (lower.contains("other") || lower.contains("more") || lower.contains("menu") || lower.contains("dishes")) {
 
-            for(Restaurant restaurant : restaurants) {
+			List<Restaurant> restaurants = restaurantRepository.findAll();
 
-                if(lower.contains(restaurant.getName().toLowerCase())) {
+			Restaurant matchedRestaurant = null;
 
-                    matchedRestaurant = restaurant;
-                    break;
-                }
-            }
+			for (Restaurant restaurant : restaurants) {
 
-            if(matchedRestaurant != null) {
+				if (lower.contains(restaurant.getName().toLowerCase())) {
 
-                List<MenuItem> items =menuItemRepository.findByRestaurant(matchedRestaurant);
+					matchedRestaurant = restaurant;
+					break;
+				}
+			}
 
-                StringBuilder result =new StringBuilder();
+			if (matchedRestaurant != null) {
 
-                result.append("Restaurant: ").append(matchedRestaurant.getName()).append("\n\n");
+				List<MenuItem> items = menuItemRepository.findByRestaurant(matchedRestaurant);
 
-                result.append("Menu Items:\n");
+				StringBuilder result = new StringBuilder();
 
-                for(MenuItem item : items) {
+				result.append("Restaurant: ").append(matchedRestaurant.getName()).append("\n\n");
 
-                    result.append(item.getName()).append(" - ").append(item.getPrice()).append("\n");
-                }
+				result.append("Menu Items:\n");
 
-                return result.toString();
-            }
-        }
+				for (MenuItem item : items) {
 
-        // Restaurant lookup by menu item
-        List<MenuItem> items =menuItemService.semanticSearch(query);
+					result.append(item.getName()).append(" - ").append(item.getPrice()).append("\n");
+				}
 
-        if(items.isEmpty()) {
-            return "No matching restaurant found.";
-        }
+				return result.toString();
+			}
+		}
 
-        MenuItem item = items.get(0);
+		QueryContext context = queryUnderstandingService.extract(query);
 
-        Restaurant restaurant =item.getRestaurant();
+		List<MenuItem> items = menuItemService.structuredSearch(context, null);
 
-        return """
-                Restaurant: %s
-                Menu Item: %s
-                Price: %s
-                """
-                .formatted(restaurant.getName(),item.getName(),item.getPrice());
-    }
-    
+		if (items.isEmpty()) {
+
+			System.out.println("Structured Search Failed. Falling back to Semantic Search");
+
+			items = menuItemService.semanticSearch(query);
+		}
+
+		if (items.isEmpty()) {
+			return "No matching restaurant found.";
+		}
+
+		StringBuilder result = new StringBuilder();
+
+		for (MenuItem item : items) {
+
+			Restaurant restaurant = item.getRestaurant();
+
+			result.append("Restaurant: ").append(restaurant.getName()).append("\n");
+
+			result.append("Menu Item: ").append(item.getName()).append("\n");
+
+			result.append("Price: ").append(item.getPrice()).append("\n\n");
+		}
+
+		return result.toString();
+	}
+
 	@Override
 	public Intent supportedIntent() {
-		
+
 		return Intent.RESTAURANT_MENU_QUERY;
 	}
 }
