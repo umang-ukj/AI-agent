@@ -377,6 +377,6 @@ public class ChatService {
 	private boolean shouldSkipLLM(Intent intent) {
 
 		return intent == Intent.RESTAURANT_SEARCH || intent == Intent.MENU_SEARCH
-				|| intent == Intent.RESTAURANT_MENU_QUERY;
+				|| intent == Intent.RESTAURANT_MENU_QUERY || intent == Intent.RECOMMENDATION;
 	}
 }

@@ -45,6 +45,7 @@ public class AgentAnalysisService {
 				RESTAURANT_MENU_QUERY
 				MENU_SEARCH
 				GENERAL_CHAT
+				RECOMMENDATION
 
 				Examples:
 
@@ -79,12 +80,60 @@ public class AgentAnalysisService {
 				  "memoryUpdate":false,
 				  "restaurantName":"Green Bowl"
 				}
+				
 				Important:
 				            - Return ONLY JSON.
 				            - Do not wrap JSON in markdown.
 				            - Do not explain anything.
 				            - Use null for missing values.
+				            
+                User: What should I eat?
 
+				{
+				  "intent":"RECOMMENDATION",
+				  "memoryUpdate":false,
+				  "dietType":null,
+				  "fitnessGoal":null,
+				  "budget":null,
+				  "foodItem":null,
+				  "restaurantName":null
+				}
+
+				User: Recommend food under 300
+
+				{
+				  "intent":"RECOMMENDATION",
+				  "memoryUpdate":false,
+				  "dietType":null,
+				  "fitnessGoal":null,
+				  "budget":300,
+				  "foodItem":null,
+				  "restaurantName":null
+				}
+
+				User: Recommend meals for muscle gain
+
+				{
+				  "intent":"RECOMMENDATION",
+				  "memoryUpdate":false,
+				  "dietType":null,
+				  "fitnessGoal":"Muscle Gain",
+				  "budget":null,
+				  "foodItem":null,
+				  "restaurantName":null
+				}
+
+				User: Suggest a healthy vegetarian meal
+
+				{
+				  "intent":"RECOMMENDATION",
+				  "memoryUpdate":false,
+				  "dietType":"Vegetarian",
+				  "fitnessGoal":null,
+				  "budget":null,
+				  "foodItem":null,
+				  "restaurantName":null
+				}
 				User Request:
 				""" + userMessage;
 
