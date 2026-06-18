@@ -5,61 +5,65 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.example.aiagent.DTO.Intent;
+import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
-import com.example.aiagent.DTO.RestaurantSearchRequest;
-import com.example.aiagent.service.ParameterExtractionService;
 import com.example.aiagent.service.RestaurantService;
 
 @Component
 public class RestaurantTool implements Tool {
 
-    @Autowired
-    private RestaurantService restaurantService;
-    
-    @Autowired
-    private ParameterExtractionService parameterExtractionService;
-    @Override
-    public Intent supportedIntent() {
-        return Intent.RESTAURANT_SEARCH;
-    }
-    
-    @Override
-    public String execute(String query) {
-        
-    	RestaurantSearchRequest request =parameterExtractionService.extract(query);
+	@Autowired
+	private RestaurantService restaurantService;
 
-    	List<Restaurant> restaurants;
+	@Override
+	public Intent supportedIntent() {
+		return Intent.RESTAURANT_SEARCH;
+	}
+	
+	@Override
+	public String execute(String query) {
+	    return execute(query, new QueryContext());
+	}
 
-    	if(request.getType() == null&& request.getBudget() == null) {
+	@Override
+	public String execute(String query, QueryContext context) {
 
-    	    System.out.println("Using Semantic Search");
+		System.out.println("Restaurant Context = " + context);
 
-    	    restaurants =restaurantService.semanticSearch(query);
+		List<Restaurant> restaurants;
 
-    	} else {
+		boolean hasFilters = context.getRestaurantType() != null || context.getMaxPrice() != null
+				|| context.getFoodItem() != null;
 
-    	    System.out.println("Using Structured Search");
+		if (!hasFilters) {
 
-    	    restaurants =restaurantService.searchRestaurants(request);
-    	}
-        
-        if(restaurants.isEmpty()) {
-            return """
-                   No matching restaurants found.
-                   """;
-        }
+			System.out.println("Using Semantic Search");
 
-        StringBuilder sb = new StringBuilder();
+			restaurants = restaurantService.semanticSearch(query);
 
-        for (Restaurant restaurant : restaurants) {
+		} else {
 
-            sb.append("Name: ").append(restaurant.getName())
-              .append(", Type: ").append(restaurant.getType())
-              .append(", Price: ").append(restaurant.getPrice())
-              .append(", Description: ").append(restaurant.getDescription())
-              .append("\n");
-        }
+			System.out.println("Using Structured Search");
 
-        return sb.toString();
-    }
+			restaurants = restaurantService.searchRestaurants(context);
+		}
+
+		if (restaurants.isEmpty()) {
+
+			return """
+					No matching restaurants found.
+					""";
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		for (Restaurant restaurant : restaurants) {
+
+			sb.append("Name: ").append(restaurant.getName()).append(", Type: ").append(restaurant.getType())
+					.append(", Price: ").append(restaurant.getPrice()).append(", Description: ")
+					.append(restaurant.getDescription()).append("\n");
+		}
+
+		return sb.toString();
+	}
 }

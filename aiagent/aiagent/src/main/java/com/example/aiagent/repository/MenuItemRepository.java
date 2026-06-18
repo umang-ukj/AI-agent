@@ -11,4 +11,5 @@ import com.example.aiagent.DTO.Restaurant;
 @Repository
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 	List<MenuItem> findByRestaurant(Restaurant restaurant);
+	List<MenuItem> findByNameContainingIgnoreCase(String name);
 }

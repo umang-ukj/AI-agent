@@ -5,18 +5,21 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
 import com.example.aiagent.DTO.RestaurantScore;
-import com.example.aiagent.DTO.RestaurantSearchRequest;
 import com.example.aiagent.repository.RestaurantRepository;
+import com.example.aiagent.DTO.MenuItem;
+import com.example.aiagent.repository.MenuItemRepository;
 
 @Service
 public class RestaurantService {
 
 	@Autowired
 	private RestaurantRepository repository;
-	
+	@Autowired
+	private MenuItemRepository menuItemRepository;
+
 	@Autowired
 	private RestaurantEmbeddingCacheService restaurantEmbeddingCacheService;
 
@@ -36,19 +39,32 @@ public class RestaurantService {
 		return repository.findByTypeAndPriceLessThanEqual("Vegetarian", budget);
 	}
 
-	public List<Restaurant> searchRestaurants(RestaurantSearchRequest request) {
+	public List<Restaurant> searchRestaurants(QueryContext context) {
 
-		if (request.getBudget() != null && request.getType() != null) {
+		List<Restaurant> restaurants = repository.findAll();
 
-			return repository.findByTypeAndPriceLessThanEqual(request.getType(), request.getBudget());
+		// Food item filter
+		if (context.getFoodItem() != null) {
+
+			List<MenuItem> menuItems = menuItemRepository.findByNameContainingIgnoreCase(context.getFoodItem());
+
+			restaurants = menuItems.stream().map(MenuItem::getRestaurant).distinct().toList();
 		}
 
-		if (request.getType() != null) {
+		// Restaurant type filter
+		if (context.getRestaurantType() != null) {
 
-			return repository.findByType(request.getType());
+			restaurants = restaurants.stream().filter(r -> r.getType().equalsIgnoreCase(context.getRestaurantType()))
+					.toList();
 		}
 
-		return repository.findAll();
+		// Budget filter
+		if (context.getMaxPrice() != null) {
+
+			restaurants = restaurants.stream().filter(r -> r.getPrice() <= context.getMaxPrice()).toList();
+		}
+
+		return restaurants;
 	}
 
 	public List<Restaurant> searchByDescription(String keyword) {
