@@ -37,4 +37,9 @@ public class MenuItem {
     @ManyToOne
     @JoinColumn(name = "restaurant_id")
     private Restaurant restaurant;
+    
+    private Integer calories;
+    private Integer protein;
+    private Integer carbs;
+    private Integer fat;
 }

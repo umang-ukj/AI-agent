@@ -26,4 +26,6 @@ public class AgentAnalysis {
     private String foodItem;
 
     private String restaurantName;
+    
+    private String nutritionGoal;
 }

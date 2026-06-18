@@ -138,4 +138,9 @@ public class MenuItemService {
 
 		return menuItems;
 	}
+	
+	public List<MenuItem> getAllMenuItems() {
+
+	    return menuItemRepository.findAll();
+	}
 }

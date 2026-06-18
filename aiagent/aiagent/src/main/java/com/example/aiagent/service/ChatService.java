@@ -105,10 +105,10 @@ public class ChatService {
 		QueryContext queryContext = new QueryContext();
 
 		queryContext.setFoodItem(analysis.getFoodItem());
-
 		queryContext.setRestaurantType(analysis.getDietType());
-
 		queryContext.setMaxPrice(analysis.getBudget());
+		queryContext.setNutritionGoal(analysis.getNutritionGoal());
+		queryContext.setRestaurantName(analysis.getRestaurantName());
 
 		System.out.println(queryContext);
 
@@ -377,6 +377,7 @@ public class ChatService {
 	private boolean shouldSkipLLM(Intent intent) {
 
 		return intent == Intent.RESTAURANT_SEARCH || intent == Intent.MENU_SEARCH
-				|| intent == Intent.RESTAURANT_MENU_QUERY || intent == Intent.RECOMMENDATION;
+				|| intent == Intent.RESTAURANT_MENU_QUERY || intent == Intent.RECOMMENDATION
+				|| intent == Intent.NUTRITION_QUERY;
 	}
 }
