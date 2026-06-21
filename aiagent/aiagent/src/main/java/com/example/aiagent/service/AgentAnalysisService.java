@@ -1,5 +1,9 @@
 package com.example.aiagent.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,179 +29,208 @@ public class AgentAnalysisService {
 		}
 
 		String prompt = """
-												Analyze the user request.
+																		Analyze the user request.
+																		If multiple tools are required,
+				                                                        populate the tools array.
+				                                                        Otherwise return a single tool.
 
-												Return ONLY valid JSON.
+																		Return ONLY valid JSON.
 
-												{
-												  "intent":"",
-												  "memoryUpdate":false,
-												  "dietType":null,
-												  "fitnessGoal":null,
-												  "budget":null,
-												  "foodItem":null,
-												  "restaurantName":null,
-												  "nutritionGoal":null
-												}
+																		{
+																		  "intent":"",
+																		  "memoryUpdate":false,
+																		  "dietType":null,
+																		  "fitnessGoal":null,
+																		  "budget":null,
+																		  "foodItem":null,
+																		  "restaurantName":null,
+																		  "nutritionGoal":null,
+																		  "tools":[]
+																		}
 
-												Intent must be one of:
+																				Intent must be one of:
 
-												RESTAURANT_SEARCH
-												RESTAURANT_MENU_QUERY
-												MENU_SEARCH
-												GENERAL_CHAT
-												RECOMMENDATION
-												NUTRITION_QUERY
+																				RESTAURANT_SEARCH
+																				RESTAURANT_MENU_QUERY
+																				MENU_SEARCH
+																				GENERAL_CHAT
+																				RECOMMENDATION
+																				NUTRITION_QUERY
 
-												Examples:
+																				Examples:
 
-												User: I am vegetarian
+																				User: I am vegetarian
 
-												{
-												  "intent":"GENERAL_CHAT",
-												  "memoryUpdate":true,
-												  "dietType":"Vegetarian"
-												}
+																				{
+																				  "intent":"GENERAL_CHAT",
+																				  "memoryUpdate":true,
+																				  "dietType":"Vegetarian"
+																				}
 
-												User: My budget is 500
+																				User: My budget is 500
 
-												{
-												  "intent":"GENERAL_CHAT",
-												  "memoryUpdate":true,
-												  "budget":500
-												}
+																				{
+																				  "intent":"GENERAL_CHAT",
+																				  "memoryUpdate":true,
+																				  "budget":500
+																				}
 
-												User: Suggest food under 500
+																				User: Suggest food under 500
 
-												{
-												  "intent":"MENU_SEARCH",
-												  "memoryUpdate":false,
-												  "budget":500
-												}
+																				{
+																				  "intent":"MENU_SEARCH",
+																				  "memoryUpdate":false,
+																				  "budget":500
+																				}
 
-												User: Show menu of Green Bowl
+																				User: Show menu of Green Bowl
 
-												{
-												  "intent":"RESTAURANT_MENU_QUERY",
-												  "memoryUpdate":false,
-												  "restaurantName":"Green Bowl"
-												}
+																				{
+																				  "intent":"RESTAURANT_MENU_QUERY",
+																				  "memoryUpdate":false,
+																				  "restaurantName":"Green Bowl"
+																				}
 
-												Important:
-												            - Return ONLY JSON.
-												            - Do not wrap JSON in markdown.
-												            - Do not explain anything.
-												            - Use null for missing values.
+																				Important:
+																				            - Return ONLY JSON.
+																				            - Do not wrap JSON in markdown.
+																				            - Do not explain anything.
+																				            - Use null for missing values.
 
-								                User: What should I eat?
+																                User: What should I eat?
 
-												{
-												  "intent":"RECOMMENDATION",
-												  "memoryUpdate":false,
-												  "dietType":null,
-												  "fitnessGoal":null,
-												  "budget":null,
-												  "foodItem":null,
-												  "restaurantName":null,
-												  nutritionGoal=null
-												}
+																				{
+																				  "intent":"RECOMMENDATION",
+																				  "memoryUpdate":false,
+																				  "dietType":null,
+																				  "fitnessGoal":null,
+																				  "budget":null,
+																				  "foodItem":null,
+																				  "restaurantName":null,
+																				  "nutritionGoal":null
+																				}
 
-												User: Recommend food under 300
+																				User: Recommend food under 300
 
-												{
-												  "intent":"RECOMMENDATION",
-												  "memoryUpdate":false,
-												  "dietType":null,
-												  "fitnessGoal":null,
-												  "budget":300,
-												  "foodItem":null,
-												  "restaurantName":null,
-												  nutritionGoal=null
-												}
+																				{
+																				  "intent":"RECOMMENDATION",
+																				  "memoryUpdate":false,
+																				  "dietType":null,
+																				  "fitnessGoal":null,
+																				  "budget":300,
+																				  "foodItem":null,
+																				  "restaurantName":null,
+																				  "nutritionGoal":null
+																				}
 
-												User: Recommend meals for muscle gain
+																				User: Recommend meals for muscle gain
 
-												{
-												  "intent":"RECOMMENDATION",
-												  "memoryUpdate":false,
-												  "dietType":null,
-												  "fitnessGoal":"Muscle Gain",
-												  "budget":null,
-												  "foodItem":null,
-												  "restaurantName":null,
-												  nutritionGoal=HIGH_PROTEIN
-												}
+																				{
+																				  "intent":"RECOMMENDATION",
+																				  "memoryUpdate":false,
+																				  "dietType":null,
+																				  "fitnessGoal":"Muscle Gain",
+																				  "budget":null,
+																				  "foodItem":null,
+																				  "restaurantName":null,
+																				  "nutritionGoal":"HIGH_PROTEIN"
+																				}
 
-												User: Suggest a healthy vegetarian meal
+																				User: Suggest a healthy vegetarian meal
 
-												{
-												  "intent":"RECOMMENDATION",
-												  "memoryUpdate":false,
-												  "dietType":"Vegetarian",
-												  "fitnessGoal":null,
-												  "budget":null,
-												  "foodItem":null,
-												  "restaurantName":null,
-												  nutritionGoal=null
-												}
-												User: Which meal has highest protein?
+																				{
+																				  "intent":"RECOMMENDATION",
+																				  "memoryUpdate":false,
+																				  "dietType":"Vegetarian",
+																				  "fitnessGoal":null,
+																				  "budget":null,
+																				  "foodItem":null,
+																				  "restaurantName":null,
+																				  "nutritionGoal":null
+																				}
+																				User: Which meal has highest protein?
+
+																{
+																  "intent":"NUTRITION_QUERY",
+																  "memoryUpdate":false,
+																  "dietType":null,
+																  "fitnessGoal":null,
+																  "budget":null,
+																  "foodItem":null,
+																  "restaurantName":null,
+																  "nutritionGoal":"HIGH_PROTEIN"
+																}
+
+																User: Show low calorie meals
+
+																{
+																  "intent":"NUTRITION_QUERY",
+																  "memoryUpdate":false,
+																  "dietType":null,
+																  "fitnessGoal":null,
+																  "budget":null,
+																  "foodItem":null,
+																  "restaurantName":null,
+																  "nutritionGoal":"LOW_CALORIE"
+																}
+
+																User: Nutrition of Protein Shake
+
+																{
+																  "intent":"NUTRITION_QUERY",
+																  "memoryUpdate":false,
+																  "dietType":null,
+																  "fitnessGoal":null,
+																  "budget":null,
+																  "foodItem":"Protein Shake",
+																  "restaurantName":null,
+																  "nutritionGoal":null
+																}
+																Nutrition Goal Rules:
+
+												highest protein
+												most protein
+												protein rich
+												high protein
+												muscle gain food
+												gym food
+
+												-> HIGH_PROTEIN
+
+												low calorie
+												lowest calorie
+												weight loss
+												fat loss
+												diet food
+
+												-> LOW_CALORIE
+												User: Suggest vegetarian high protein meals under 300
 
 								{
-								  "intent":"NUTRITION_QUERY",
+								  "intent":"RECOMMENDATION",
 								  "memoryUpdate":false,
-								  "dietType":null,
-								  "fitnessGoal":null,
-								  "budget":null,
-								  "foodItem":null,
-								  "restaurantName":null,
-								  "nutritionGoal":"HIGH_PROTEIN"
+								  "dietType":"Vegetarian",
+								  "budget":300,
+								  "nutritionGoal":"HIGH_PROTEIN",
+								  "tools":[
+								     "RECOMMENDATION",
+								     "NUTRITION_QUERY"
+								  ]
 								}
+								User: Recommend low calorie meals
 
-								User: Show low calorie meals
-
-								{
-								  "intent":"NUTRITION_QUERY",
-								  "memoryUpdate":false,
-								  "dietType":null,
-								  "fitnessGoal":null,
-								  "budget":null,
-								  "foodItem":null,
-								  "restaurantName":null,
-								  "nutritionGoal":"LOW_CALORIE"
-								}
-
-								User: Nutrition of Protein Shake
-
-								{
-								  "intent":"NUTRITION_QUERY",
-								  "memoryUpdate":false,
-								  "dietType":null,
-								  "fitnessGoal":null,
-								  "budget":null,
-								  "foodItem":"Protein Shake",
-								  "restaurantName":null,
-								  nutritionGoal=null
-								}
-								Nutrition Goal Rules:
-
-				highest protein
-				most protein
-				protein rich
-				high protein
-				muscle gain food
-				gym food
-
-				-> HIGH_PROTEIN
-
-				low calorie
-				lowest calorie
-				weight loss
-				fat loss
-				diet food
-
-				-> LOW_CALORIE
-												User Request:
-												""" + userMessage;
+				{
+				  "intent":"RECOMMENDATION",
+				  "memoryUpdate":false,
+				  "nutritionGoal":"LOW_CALORIE",
+				  "tools":[
+				     "RECOMMENDATION",
+				     "NUTRITION_QUERY"
+				  ]
+				}
+																				User Request:
+																				"""
+				+ userMessage;
 
 		String response = llmProvider.getService().generate(prompt);
 
@@ -254,6 +287,16 @@ public class AgentAnalysisService {
 		}
 		if (!json.isNull("nutritionGoal")) {
 			analysis.setNutritionGoal(json.getString("nutritionGoal"));
+		}
+		if (json.has("tools") && !json.isNull("tools")) {
+
+			List<Intent> tools = new ArrayList<>();
+			JSONArray array = json.getJSONArray("tools");
+
+			for (int i = 0; i < array.length(); i++) {
+				tools.add(Intent.valueOf(array.getString(i).trim().toUpperCase()));
+			}
+			analysis.setTools(tools);
 		}
 
 		return analysis;

@@ -1,5 +1,7 @@
 package com.example.aiagent.DTO;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,4 +30,6 @@ public class AgentAnalysis {
     private String restaurantName;
     
     private String nutritionGoal;
+    
+    private List<Intent> tools;
 }

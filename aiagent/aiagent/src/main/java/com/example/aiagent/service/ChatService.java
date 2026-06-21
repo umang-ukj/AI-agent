@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.aiagent.DTO.AgentAnalysis;
+import com.example.aiagent.DTO.AgentExecutionContext;
 import com.example.aiagent.DTO.ChatRequest;
 import com.example.aiagent.DTO.ChatResponse;
 import com.example.aiagent.DTO.ConversationContext;
@@ -154,9 +155,17 @@ public class ChatService {
 			history = new ArrayList<>(history.subList(history.size() - 6, history.size()));
 		}
 
-		Intent intent;
+		// Intent intent;
 
-		intent = analysis.getIntent();
+		// intent = analysis.getIntent();
+
+		List<Intent> intents = analysis.getTools();
+
+		if (intents == null || intents.isEmpty()) {
+			intents = List.of(analysis.getIntent());
+		}
+
+		Intent intent = intents.get(0);
 
 		if (intent == Intent.GENERAL_CHAT && context.getRestaurantName() != null
 				&& isRestaurantMenuFollowUp(userMessage)) {
@@ -169,50 +178,85 @@ public class ChatService {
 		// Now save current user message
 		memoryService.addMessage(sessionId, "user", userMessage);
 
-		Object tool = toolRegistry.getTool(intent);
+		// Object tool = toolRegistry.getTool(intent);
 
-		if (tool == null) {
+		/*
+		 * if (tool == null) {
+		 * 
+		 * System.out.println("NO TOOL FOUND FOR INTENT = " + intent);
+		 * 
+		 * String aiText = llmProvider.getService().generate(userMessage);
+		 * 
+		 * memoryService.addMessage(sessionId, "AI", aiText);
+		 * 
+		 * ChatResponse response = new ChatResponse();
+		 * 
+		 * response.setResponse(aiText);
+		 * 
+		 * return response; }
+		 */
 
-			System.out.println("NO TOOL FOUND FOR INTENT = " + intent);
+		// String toolContext = "";
 
-			String aiText = llmProvider.getService().generate(userMessage);
+		/*
+		 * if (tool != null) {
+		 * 
+		 * if (intent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() !=
+		 * null) {
+		 * 
+		 * Optional<Restaurant> restaurantOpt = restaurantRepository
+		 * .findByNameContainingIgnoreCase(context.getRestaurantName());
+		 * 
+		 * if (restaurantOpt.isPresent()) {
+		 * 
+		 * toolContext = menuItemTool.execute(userMessage, restaurantOpt.get());
+		 * 
+		 * } else {
+		 * 
+		 * toolContext = ((Tool) tool).execute(userMessage, queryContext); }
+		 * 
+		 * } else {
+		 * 
+		 * toolContext = ((Tool) tool).execute(userMessage, queryContext); }
+		 * 
+		 * System.out.println("TOOL = " + tool.getClass().getSimpleName());
+		 * 
+		 * System.out.println("TOOL CONTEXT = [" + toolContext + "]"); }
+		 */
+		AgentExecutionContext executionContext = new AgentExecutionContext();
 
-			memoryService.addMessage(sessionId, "AI", aiText);
+		StringBuilder combinedToolContext = new StringBuilder();
 
-			ChatResponse response = new ChatResponse();
+		for (Intent toolIntent : intents) {
+			Object tool = toolRegistry.getTool(toolIntent);
 
-			response.setResponse(aiText);
+			if (tool == null) {
+				continue;
+			}
 
-			return response;
-		}
+			String toolContext = "";
 
-		String toolContext = "";
-
-		if (tool != null) {
-
-			if (intent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() != null) {
-
+			if (toolIntent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() != null) {
 				Optional<Restaurant> restaurantOpt = restaurantRepository
 						.findByNameContainingIgnoreCase(context.getRestaurantName());
 
 				if (restaurantOpt.isPresent()) {
-
 					toolContext = menuItemTool.execute(userMessage, restaurantOpt.get());
 
 				} else {
-
-					toolContext = ((Tool) tool).execute(userMessage, queryContext);
+					toolContext = ((Tool) tool).execute(userMessage, queryContext, executionContext);
 				}
 
 			} else {
-
-				toolContext = ((Tool) tool).execute(userMessage, queryContext);
+				toolContext = ((Tool) tool).execute(userMessage, queryContext, executionContext);
 			}
 
 			System.out.println("TOOL = " + tool.getClass().getSimpleName());
-
 			System.out.println("TOOL CONTEXT = [" + toolContext + "]");
+
+			combinedToolContext.append("\n=== ").append(toolIntent).append(" ===\n").append(toolContext).append("\n");
 		}
+		String toolContext = combinedToolContext.toString();
 
 		// Save restaurant into conversation context
 		// Save restaurant context only when exactly one restaurant is returned
@@ -258,12 +302,11 @@ public class ChatService {
 			return response;
 		}
 
-		if (shouldSkipLLM(intent)) {
+		if (intents.size() == 1 && shouldSkipLLM(intent)) {
 
 			System.out.println("RETURNING TOOL RESPONSE DIRECTLY");
 
 			memoryService.addMessage(sessionId, "AI", toolContext);
-
 			ChatResponse response = new ChatResponse();
 			response.setResponse(toolContext);
 
@@ -341,15 +384,35 @@ public class ChatService {
 		} else {
 
 			fullPrompt = """
-					Use the conversation summary and history as context.
+					You are a food recommendation assistant.
+
+					User Question:
+					%s
+
+					Structured Filters:
+					- Diet Type: %s
+					- Budget (Price): %s
+					- Nutrition Goal: %s
+
+					Tool Results:
+					%s
 
 					Rules:
-					- Answer only the latest user question.
-					- Do not repeat the summary.
-					- Do not summarize the conversation.
-
-					Summary:
-					""" + summary + "\n\n" + String.join("\n", history);
+					- Budget always refers to PRICE, never calories.
+					- Trust the recommendation results already selected by the tools.
+					- Use nutrition information only as additional details.
+					- Do not reject a recommendation because of calories unless the user explicitly asks about calories.
+					- Use only information present in the tool results.
+					- The result returned by NUTRITION_QUERY is the final selected meal.
+					- Use RECOMMENDATION results only as supporting context.
+					- If Nutrition Goal is HIGH_PROTEIN, select the meal with the highest protein among the recommended meals.
+					- If Nutrition Goal is LOW_CALORIE, select the meal with the lowest calories among the recommended meals.
+					- Budget is only a filtering constraint, not a ranking criterion.
+					- Do not choose a cheaper meal if another recommended meal better satisfies the nutrition goal.
+					- Explain briefly why the selected meal matches the user's request.
+					"""
+					.formatted(userMessage, queryContext.getRestaurantType(), queryContext.getMaxPrice(),
+							queryContext.getNutritionGoal(), toolContext);
 		}
 
 		System.out.println("\n========== PROMPT ==========");
