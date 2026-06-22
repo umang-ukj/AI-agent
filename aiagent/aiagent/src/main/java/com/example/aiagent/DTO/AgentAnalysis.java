@@ -29,7 +29,8 @@ public class AgentAnalysis {
 
     private String restaurantName;
     
-    private String nutritionGoal;
+    private String nutritionMetric;
+    private String sortOrder;
     
     private List<Intent> tools;
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.DTO.ToolResult;
 import com.example.aiagent.service.RestaurantService;
 
 @Component
@@ -21,12 +22,12 @@ public class RestaurantTool implements Tool {
 	}
 	
 	@Override
-	public String execute(String query) {
+	public ToolResult execute(String query) {
 	    return execute(query, new QueryContext());
 	}
 
 	@Override
-	public String execute(String query, QueryContext context) {
+	public ToolResult execute(String query, QueryContext context) {
 
 		System.out.println("Restaurant Context = " + context);
 
@@ -50,9 +51,9 @@ public class RestaurantTool implements Tool {
 
 		if (restaurants.isEmpty()) {
 
-			return """
+			return new ToolResult("Restaurant Tool", """
 					No matching restaurants found.
-					""";
+					""");
 		}
 
 		StringBuilder sb = new StringBuilder();
@@ -64,6 +65,6 @@ public class RestaurantTool implements Tool {
 					.append(restaurant.getDescription()).append("\n");
 		}
 
-		return sb.toString();
+		return new ToolResult("Restaurant Tool", sb.toString());
 	}
 }

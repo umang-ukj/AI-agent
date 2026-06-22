@@ -8,6 +8,7 @@ import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.MenuItem;
 import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.DTO.ToolResult;
 import com.example.aiagent.repository.MenuItemRepository;
 import com.example.aiagent.repository.RestaurantRepository;
 
@@ -21,24 +22,23 @@ public class RestaurantMenuTool implements Tool {
 	private MenuItemRepository menuItemRepository;
 
 	@Override
-	public String execute(String query, QueryContext context) {
+	public ToolResult execute(String query, QueryContext context) {
 
 		if (context == null || context.getRestaurantName() == null) {
-
-			return "Restaurant name not found.";
+			return new ToolResult("RestaurantMenu Tool","Restaurant name not found.");
 		}
 
 		Restaurant restaurant = restaurantRepository.findAll().stream()
 				.filter(r -> r.getName().equalsIgnoreCase(context.getRestaurantName())).findFirst().orElse(null);
 
 		if (restaurant == null) {
-			return "Restaurant not found.";
+			return new ToolResult("RestaurantMenu Tool","Restaurant not found.");
 		}
 
 		List<MenuItem> items = menuItemRepository.findByRestaurant(restaurant);
 
 		if (items.isEmpty()) {
-			return "No menu items found.";
+			return new ToolResult("RestaurantMenu Tool","No menu items found.");
 		}
 
 		StringBuilder result = new StringBuilder();
@@ -52,7 +52,7 @@ public class RestaurantMenuTool implements Tool {
 			result.append(item.getName()).append(" - Rs. ").append(item.getPrice()).append("\n");
 		}
 
-		return result.toString();
+		return new ToolResult("RestaurantMenu Tool", result.toString());
 	}
 
 	@Override
@@ -61,7 +61,8 @@ public class RestaurantMenuTool implements Tool {
 	}
 
 	@Override
-	public String execute(String query) {
-		return "Restaurant menu query requires context";
+	public ToolResult execute(String query) {
+		return new ToolResult("RestaurantMenu Tool","Restaurant menu query requires context");
+		
 	}
 }

@@ -29,14 +29,14 @@ public class AgentAnalysisService {
 		}
 
 		String prompt = """
-																		Analyze the user request.
-																		If multiple tools are required,
-				                                                        populate the tools array.
-				                                                        Otherwise return a single tool.
+																																				Analyze the user request.
+																																				If multiple tools are required,
+																						                                                        populate the tools array.
+																						                                                        Otherwise return a single tool.
 
-																		Return ONLY valid JSON.
+																																				Return ONLY valid JSON.
 
-																		{
+																																				{
 																		  "intent":"",
 																		  "memoryUpdate":false,
 																		  "dietType":null,
@@ -44,193 +44,231 @@ public class AgentAnalysisService {
 																		  "budget":null,
 																		  "foodItem":null,
 																		  "restaurantName":null,
-																		  "nutritionGoal":null,
+																		  "nutritionMetric":null,
+																		  "sortOrder":null,
 																		  "tools":[]
 																		}
 
-																				Intent must be one of:
+																																						Intent must be one of:
 
-																				RESTAURANT_SEARCH
-																				RESTAURANT_MENU_QUERY
-																				MENU_SEARCH
-																				GENERAL_CHAT
-																				RECOMMENDATION
-																				NUTRITION_QUERY
+																																						RESTAURANT_SEARCH
+																																						RESTAURANT_MENU_QUERY
+																																						MENU_SEARCH
+																																						GENERAL_CHAT
+																																						RECOMMENDATION
+																																						NUTRITION_QUERY
 
-																				Examples:
+																																						Examples:
 
-																				User: I am vegetarian
+																																						User: I am vegetarian
 
-																				{
-																				  "intent":"GENERAL_CHAT",
-																				  "memoryUpdate":true,
-																				  "dietType":"Vegetarian"
-																				}
+																																						{
+																																						  "intent":"GENERAL_CHAT",
+																																						  "memoryUpdate":true,
+																																						  "dietType":"Vegetarian"
+																																						}
 
-																				User: My budget is 500
+																																						User: My budget is 500
 
-																				{
-																				  "intent":"GENERAL_CHAT",
-																				  "memoryUpdate":true,
-																				  "budget":500
-																				}
+																																						{
+																																						  "intent":"GENERAL_CHAT",
+																																						  "memoryUpdate":true,
+																																						  "budget":500
+																																						}
 
-																				User: Suggest food under 500
+																																						User: Suggest food under 500
 
-																				{
-																				  "intent":"MENU_SEARCH",
-																				  "memoryUpdate":false,
-																				  "budget":500
-																				}
+																																						{
+																																						  "intent":"MENU_SEARCH",
+																																						  "memoryUpdate":false,
+																																						  "budget":500
+																																						}
 
-																				User: Show menu of Green Bowl
+																																						User: Show menu of Green Bowl
 
-																				{
-																				  "intent":"RESTAURANT_MENU_QUERY",
-																				  "memoryUpdate":false,
-																				  "restaurantName":"Green Bowl"
-																				}
+																																						{
+																																						  "intent":"RESTAURANT_MENU_QUERY",
+																																						  "memoryUpdate":false,
+																																						  "restaurantName":"Green Bowl"
+																																						}
 
-																				Important:
-																				            - Return ONLY JSON.
-																				            - Do not wrap JSON in markdown.
-																				            - Do not explain anything.
-																				            - Use null for missing values.
+																																						Important:
+																																						            - Return ONLY JSON.
+																																						            - Do not wrap JSON in markdown.
+																																						            - Do not explain anything.
+																																						            - Use null for missing values.
 
-																                User: What should I eat?
+																																		                User: What should I eat?
 
-																				{
-																				  "intent":"RECOMMENDATION",
-																				  "memoryUpdate":false,
-																				  "dietType":null,
-																				  "fitnessGoal":null,
-																				  "budget":null,
-																				  "foodItem":null,
-																				  "restaurantName":null,
-																				  "nutritionGoal":null
-																				}
+																																						{
+  "intent":"RECOMMENDATION",
+  "memoryUpdate":false,
+  "dietType":null,
+  "fitnessGoal":null,
+  "budget":null,
+  "foodItem":null,
+  "restaurantName":null,
+  "nutritionMetric":null,
+  "sortOrder":null
+}
 
-																				User: Recommend food under 300
+																																						User: Recommend food under 300
 
-																				{
-																				  "intent":"RECOMMENDATION",
-																				  "memoryUpdate":false,
-																				  "dietType":null,
-																				  "fitnessGoal":null,
-																				  "budget":300,
-																				  "foodItem":null,
-																				  "restaurantName":null,
-																				  "nutritionGoal":null
-																				}
+																																						{
+  "intent":"RECOMMENDATION",
+  "memoryUpdate":false,
+  "dietType":null,
+  "fitnessGoal":null,
+  "budget":300,
+  "foodItem":null,
+  "restaurantName":null,
+  "nutritionMetric":null,
+  "sortOrder":null
+}
 
-																				User: Recommend meals for muscle gain
+																																						User: Recommend meals for muscle gain
 
-																				{
-																				  "intent":"RECOMMENDATION",
-																				  "memoryUpdate":false,
-																				  "dietType":null,
-																				  "fitnessGoal":"Muscle Gain",
-																				  "budget":null,
-																				  "foodItem":null,
-																				  "restaurantName":null,
-																				  "nutritionGoal":"HIGH_PROTEIN"
-																				}
+																																						{
+  "intent":"RECOMMENDATION",
+  "memoryUpdate":false,
+  "dietType":null,
+  "fitnessGoal":"Muscle Gain",
+  "budget":null,
+  "foodItem":null,
+  "restaurantName":null,
+  "nutritionMetric":"protein",
+  "sortOrder":"DESC"
+}
 
-																				User: Suggest a healthy vegetarian meal
+																																						User: Suggest a healthy vegetarian meal
 
-																				{
-																				  "intent":"RECOMMENDATION",
-																				  "memoryUpdate":false,
-																				  "dietType":"Vegetarian",
-																				  "fitnessGoal":null,
-																				  "budget":null,
-																				  "foodItem":null,
-																				  "restaurantName":null,
-																				  "nutritionGoal":null
-																				}
-																				User: Which meal has highest protein?
+																																						{
+																																						  "intent":"RECOMMENDATION",
+																																						  "memoryUpdate":false,
+																																						  "dietType":"Vegetarian",
+																																						  "fitnessGoal":null,
+																																						  "budget":null,
+																																						  "foodItem":null,
+																																						  "restaurantName":null,
+																																						  "nutritionMetric":null,
+																                                                                                          "sortOrder":null
+																																						}
+																																						User: Which meal has highest protein?
 
-																{
-																  "intent":"NUTRITION_QUERY",
-																  "memoryUpdate":false,
-																  "dietType":null,
-																  "fitnessGoal":null,
-																  "budget":null,
-																  "foodItem":null,
-																  "restaurantName":null,
-																  "nutritionGoal":"HIGH_PROTEIN"
-																}
+																																		{
+																																		  "intent":"NUTRITION_QUERY",
+																																		  "memoryUpdate":false,
+																																		  "dietType":null,
+																																		  "fitnessGoal":null,
+																																		  "budget":null,
+																																		  "foodItem":null,
+																																		  "restaurantName":null,
+																																		  "nutritionMetric":"protein",
+																                                                                          "sortOrder":"DESC"
+																																		}
 
-																User: Show low calorie meals
+																																		User: Show low calorie meals
 
-																{
-																  "intent":"NUTRITION_QUERY",
-																  "memoryUpdate":false,
-																  "dietType":null,
-																  "fitnessGoal":null,
-																  "budget":null,
-																  "foodItem":null,
-																  "restaurantName":null,
-																  "nutritionGoal":"LOW_CALORIE"
-																}
+																																		{
+																																		  "intent":"NUTRITION_QUERY",
+																																		  "memoryUpdate":false,
+																																		  "dietType":null,
+																																		  "fitnessGoal":null,
+																																		  "budget":null,
+																																		  "foodItem":null,
+																																		  "restaurantName":null,
+																																		  "nutritionMetric":"calories",
+												  "sortOrder":"ASC"
+																																		}
+																																		User: Which meal has highest calories?
 
-																User: Nutrition of Protein Shake
+												{
+												  "intent":"NUTRITION_QUERY",
+												  "memoryUpdate":false,
+												  "dietType":null,
+												  "fitnessGoal":null,
+												  "budget":null,
+												  "foodItem":null,
+												  "restaurantName":null,
+												  "nutritionMetric":"calories",
+												  "sortOrder":"DESC"
+												}
 
-																{
-																  "intent":"NUTRITION_QUERY",
-																  "memoryUpdate":false,
-																  "dietType":null,
-																  "fitnessGoal":null,
-																  "budget":null,
-																  "foodItem":"Protein Shake",
-																  "restaurantName":null,
-																  "nutritionGoal":null
-																}
-																Nutrition Goal Rules:
+																																		User: Nutrition of Protein Shake
 
-												highest protein
-												most protein
-												protein rich
-												high protein
-												muscle gain food
-												gym food
+																																		{
+																																		  "intent":"NUTRITION_QUERY",
+																																		  "memoryUpdate":false,
+																																		  "dietType":null,
+																																		  "fitnessGoal":null,
+																																		  "budget":null,
+																																		  "foodItem":"Protein Shake",
+																																		  "restaurantName":null,
+																																		  "nutritionMetric":"protein",
+												  "sortOrder":null
+																																		}
+																																		Nutrition Rules:
 
-												-> HIGH_PROTEIN
+								highest protein
+								most protein
+								protein rich
+								high protein
+								muscle gain food
+								gym food
 
-												low calorie
-												lowest calorie
-												weight loss
-												fat loss
-												diet food
+								-> nutritionMetric=protein
+								-> sortOrder=DESC
 
-												-> LOW_CALORIE
-												User: Suggest vegetarian high protein meals under 300
+								highest calories
+								calorie dense
+								bulking food
+								mass gain food
 
-								{
-								  "intent":"RECOMMENDATION",
-								  "memoryUpdate":false,
-								  "dietType":"Vegetarian",
-								  "budget":300,
-								  "nutritionGoal":"HIGH_PROTEIN",
-								  "tools":[
-								     "RECOMMENDATION",
-								     "NUTRITION_QUERY"
-								  ]
-								}
-								User: Recommend low calorie meals
+								-> nutritionMetric=calories
+								-> sortOrder=DESC
 
-				{
+								low calorie
+								lowest calorie
+								weight loss
+								fat loss
+								diet food
+
+								-> nutritionMetric=calories
+								-> sortOrder=ASC
+
+								highest carbs
+								most carbs
+
+								-> nutritionMetric=carbs
+								-> sortOrder=DESC																						User: Suggest vegetarian high protein meals under 300
+
+																										{
 				  "intent":"RECOMMENDATION",
 				  "memoryUpdate":false,
-				  "nutritionGoal":"LOW_CALORIE",
+				  "dietType":"Vegetarian",
+				  "budget":300,
+				  "nutritionMetric":"protein",
+				  "sortOrder":"DESC",
 				  "tools":[
 				     "RECOMMENDATION",
 				     "NUTRITION_QUERY"
 				  ]
 				}
-																				User Request:
-																				"""
-				+ userMessage;
+																										User: Recommend low calorie meals
+
+																						{
+  "intent":"RECOMMENDATION",
+  "memoryUpdate":false,
+  "nutritionMetric":"calories",
+  "sortOrder":"ASC",
+  "tools":[
+     "RECOMMENDATION",
+     "NUTRITION_QUERY"
+  ]
+}
+																		                User Request:
+																						"""
+																						+ userMessage;
 
 		String response = llmProvider.getService().generate(prompt);
 
@@ -285,8 +323,11 @@ public class AgentAnalysisService {
 		if (!json.isNull("restaurantName")) {
 			analysis.setRestaurantName(json.getString("restaurantName"));
 		}
-		if (!json.isNull("nutritionGoal")) {
-			analysis.setNutritionGoal(json.getString("nutritionGoal"));
+		if (!json.isNull("nutritionMetric")) {
+			analysis.setNutritionMetric(json.getString("nutritionMetric"));
+		}
+		if (!json.isNull("sortOrder")) {
+			analysis.setSortOrder(json.getString("sortOrder"));
 		}
 		if (json.has("tools") && !json.isNull("tools")) {
 

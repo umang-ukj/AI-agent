@@ -9,6 +9,7 @@ import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.MenuItem;
 import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.DTO.ToolResult;
 import com.example.aiagent.service.MenuItemService;
 
 @Component
@@ -23,14 +24,13 @@ public class MenuItemTool implements Tool {
 	}
 
 	@Override
-	public String execute(String query) {
+	public ToolResult execute(String query) {
 
 		return execute(query, new QueryContext());
 	}
 
-	public String execute(String query, Restaurant restaurant) {
-
-		return buildResponse(menuItemService.semanticSearch(query, restaurant));
+	public ToolResult execute(String query, Restaurant restaurant) {
+		return new ToolResult("MenuItem Tool", buildResponse(menuItemService.semanticSearch(query, restaurant)));
 	}
 
 	private String buildResponse(List<MenuItem> items) {
@@ -52,15 +52,15 @@ public class MenuItemTool implements Tool {
 	}
 
 	@Override
-	public String execute(String query, QueryContext context) {
+	public ToolResult execute(String query, QueryContext context) {
 
 		List<MenuItem> items = menuItemService.structuredSearch(context, null);
 
 		if (items.isEmpty()) {
-			return "No matching menu item found.";
+			return new ToolResult("MenuItem Tool", "No matching menu item found.");
 		}
 
-		return buildResponse(items);
+		return new ToolResult("MenuItem Tool", buildResponse(items));
 	}
 
 }

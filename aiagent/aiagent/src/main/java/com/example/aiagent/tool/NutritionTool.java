@@ -2,6 +2,8 @@ package com.example.aiagent.tool;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.ToDoubleFunction;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,6 +12,7 @@ import com.example.aiagent.DTO.AgentExecutionContext;
 import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.MenuItem;
 import com.example.aiagent.DTO.QueryContext;
+import com.example.aiagent.DTO.ToolResult;
 import com.example.aiagent.service.MenuItemService;
 
 @Component
@@ -24,14 +27,17 @@ public class NutritionTool implements Tool {
 	}
 
 	@Override
-	public String execute(String query) {
+	public ToolResult execute(String query) {
 		return execute(query, null);
 	}
 
 	@Override
-	public String execute(String query, QueryContext context) {
-		return processNutrition(query, context, menuItemService.getAllMenuItems());
+	public ToolResult execute(String query, QueryContext context) {
+		return new ToolResult("Nutrition Tool", processNutrition(query, context, menuItemService.getAllMenuItems()));
 	}
+
+	private static final Map<String, ToDoubleFunction<MenuItem>> METRICS = Map.of("protein", item -> item.getProtein(),
+			"calories", item -> item.getCalories(), "carbs", item -> item.getCarbs(), "fat", item -> item.getFat());
 
 	private String buildNutritionResponse(MenuItem item) {
 
@@ -50,45 +56,40 @@ public class NutritionTool implements Tool {
 	}
 
 	@Override
-	public String execute(String query, QueryContext context, AgentExecutionContext executionContext) {
+	public ToolResult execute(String query, QueryContext context, AgentExecutionContext executionContext) {
 
 		String lower = query.toLowerCase();
 
 		List<MenuItem> items;
 
 		if (executionContext.getCandidateMeals() != null && !executionContext.getCandidateMeals().isEmpty()) {
-
 			items = executionContext.getCandidateMeals();
 
 			System.out.println("NutritionTool using chained candidates");
 		} else {
-
 			items = menuItemService.getAllMenuItems();
-
 			System.out.println("NutritionTool using full database");
 		}
 
-		return processNutrition(lower, context, items);
+		return new ToolResult("Nutrition Tool", processNutrition(lower, context, items));
 	}
 
 	private String processNutrition(String query, QueryContext context, List<MenuItem> items) {
 
 		String lower = query.toLowerCase();
+		String metric = context.getNutritionMetric();
+		String sortOrder = context.getSortOrder();
 
-		String nutritionGoal = context.getNutritionGoal();
+		if (metric != null) {
+			ToDoubleFunction<MenuItem> extractor = METRICS.get(metric.toLowerCase());
 
-		if ("HIGH_PROTEIN".equals(nutritionGoal)) {
+			if (extractor != null) {
+				Comparator<MenuItem> comparator = Comparator.comparingDouble(extractor);
+				MenuItem best = "DESC".equalsIgnoreCase(sortOrder) ? items.stream().max(comparator).orElse(null)
+						: items.stream().min(comparator).orElse(null);
 
-			MenuItem best = items.stream().max(Comparator.comparing(MenuItem::getProtein)).orElse(null);
-
-			return buildNutritionResponse(best);
-		}
-
-		if ("LOW_CALORIE".equals(nutritionGoal)) {
-
-			MenuItem best = items.stream().min(Comparator.comparing(MenuItem::getCalories)).orElse(null);
-
-			return buildNutritionResponse(best);
+				return buildNutritionResponse(best);
+			}
 		}
 
 		for (MenuItem item : items) {

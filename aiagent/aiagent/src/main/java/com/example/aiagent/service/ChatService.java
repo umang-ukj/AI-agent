@@ -15,6 +15,7 @@ import com.example.aiagent.DTO.ConversationContext;
 import com.example.aiagent.DTO.Intent;
 import com.example.aiagent.DTO.QueryContext;
 import com.example.aiagent.DTO.Restaurant;
+import com.example.aiagent.DTO.ToolResult;
 import com.example.aiagent.repository.RestaurantRepository;
 import com.example.aiagent.tool.MenuItemTool;
 import com.example.aiagent.tool.Tool;
@@ -41,10 +42,13 @@ public class ChatService {
 	private AgentAnalysisService agentAnalysisService;
 
 	public ChatResponse getResponse(ChatRequest chatRequest) {
+		long requestStart = System.currentTimeMillis();
 
 		String userMessage = chatRequest.getMessage();
-
+		long analysisStart = System.currentTimeMillis();
 		AgentAnalysis analysis = agentAnalysisService.analyze(userMessage);
+
+		System.out.println("ANALYSIS TIME = " + (System.currentTimeMillis() - analysisStart) + " ms");
 
 		System.out.println("AGENT ANALYSIS = " + analysis);
 
@@ -108,7 +112,8 @@ public class ChatService {
 		queryContext.setFoodItem(analysis.getFoodItem());
 		queryContext.setRestaurantType(analysis.getDietType());
 		queryContext.setMaxPrice(analysis.getBudget());
-		queryContext.setNutritionGoal(analysis.getNutritionGoal());
+		queryContext.setNutritionMetric(analysis.getNutritionMetric());
+		queryContext.setSortOrder(analysis.getSortOrder());
 		queryContext.setRestaurantName(analysis.getRestaurantName());
 
 		System.out.println(queryContext);
@@ -178,53 +183,8 @@ public class ChatService {
 		// Now save current user message
 		memoryService.addMessage(sessionId, "user", userMessage);
 
-		// Object tool = toolRegistry.getTool(intent);
-
-		/*
-		 * if (tool == null) {
-		 * 
-		 * System.out.println("NO TOOL FOUND FOR INTENT = " + intent);
-		 * 
-		 * String aiText = llmProvider.getService().generate(userMessage);
-		 * 
-		 * memoryService.addMessage(sessionId, "AI", aiText);
-		 * 
-		 * ChatResponse response = new ChatResponse();
-		 * 
-		 * response.setResponse(aiText);
-		 * 
-		 * return response; }
-		 */
-
-		// String toolContext = "";
-
-		/*
-		 * if (tool != null) {
-		 * 
-		 * if (intent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() !=
-		 * null) {
-		 * 
-		 * Optional<Restaurant> restaurantOpt = restaurantRepository
-		 * .findByNameContainingIgnoreCase(context.getRestaurantName());
-		 * 
-		 * if (restaurantOpt.isPresent()) {
-		 * 
-		 * toolContext = menuItemTool.execute(userMessage, restaurantOpt.get());
-		 * 
-		 * } else {
-		 * 
-		 * toolContext = ((Tool) tool).execute(userMessage, queryContext); }
-		 * 
-		 * } else {
-		 * 
-		 * toolContext = ((Tool) tool).execute(userMessage, queryContext); }
-		 * 
-		 * System.out.println("TOOL = " + tool.getClass().getSimpleName());
-		 * 
-		 * System.out.println("TOOL CONTEXT = [" + toolContext + "]"); }
-		 */
 		AgentExecutionContext executionContext = new AgentExecutionContext();
-
+		long toolStart = System.currentTimeMillis();
 		StringBuilder combinedToolContext = new StringBuilder();
 
 		for (Intent toolIntent : intents) {
@@ -234,28 +194,29 @@ public class ChatService {
 				continue;
 			}
 
-			String toolContext = "";
+			ToolResult toolResult = null;
 
 			if (toolIntent == Intent.RESTAURANT_MENU_QUERY && context.getRestaurantName() != null) {
 				Optional<Restaurant> restaurantOpt = restaurantRepository
 						.findByNameContainingIgnoreCase(context.getRestaurantName());
 
 				if (restaurantOpt.isPresent()) {
-					toolContext = menuItemTool.execute(userMessage, restaurantOpt.get());
+					toolResult = menuItemTool.execute(userMessage, restaurantOpt.get());
 
 				} else {
-					toolContext = ((Tool) tool).execute(userMessage, queryContext, executionContext);
+					toolResult = ((Tool) tool).execute(userMessage, queryContext, executionContext);
 				}
 
 			} else {
-				toolContext = ((Tool) tool).execute(userMessage, queryContext, executionContext);
+				toolResult = ((Tool) tool).execute(userMessage, queryContext, executionContext);
 			}
 
 			System.out.println("TOOL = " + tool.getClass().getSimpleName());
-			System.out.println("TOOL CONTEXT = [" + toolContext + "]");
-
-			combinedToolContext.append("\n=== ").append(toolIntent).append(" ===\n").append(toolContext).append("\n");
+			System.out.println("TOOL RESULT = [" + toolResult.getContent() + "]");
+			combinedToolContext.append("\n=== ").append(toolResult.getToolName()).append(" ===\n")
+					.append(toolResult.getContent()).append("\n");
 		}
+		System.out.println("TOOL TIME = " + (System.currentTimeMillis() - toolStart) + " ms");
 		String toolContext = combinedToolContext.toString();
 
 		// Save restaurant into conversation context
@@ -392,7 +353,8 @@ public class ChatService {
 					Structured Filters:
 					- Diet Type: %s
 					- Budget (Price): %s
-					- Nutrition Goal: %s
+					- Nutrition Metric: %s
+					               - Sort Order: %s
 
 					Tool Results:
 					%s
@@ -405,27 +367,32 @@ public class ChatService {
 					- Use only information present in the tool results.
 					- The result returned by NUTRITION_QUERY is the final selected meal.
 					- Use RECOMMENDATION results only as supporting context.
-					- If Nutrition Goal is HIGH_PROTEIN, select the meal with the highest protein among the recommended meals.
-					- If Nutrition Goal is LOW_CALORIE, select the meal with the lowest calories among the recommended meals.
+					- Nutrition Metric specifies which nutritional field should be used.
+					               - Sort Order DESC means highest value.
+					               - Sort Order ASC means lowest value.
+					               - Trust the result returned by NUTRITION_QUERY.
 					- Budget is only a filtering constraint, not a ranking criterion.
 					- Do not choose a cheaper meal if another recommended meal better satisfies the nutrition goal.
 					- Explain briefly why the selected meal matches the user's request.
-					"""
-					.formatted(userMessage, queryContext.getRestaurantType(), queryContext.getMaxPrice(),
-							queryContext.getNutritionGoal(), toolContext);
+					""".formatted(userMessage, queryContext.getRestaurantType(), queryContext.getMaxPrice(),
+					queryContext.getNutritionMetric(), queryContext.getSortOrder(), toolContext);
 		}
 
 		System.out.println("\n========== PROMPT ==========");
 		System.out.println(fullPrompt);
 		System.out.println("============================\n");
 
+		System.out.println("PROMPT LENGTH = " + fullPrompt.length());
+		long llmStart = System.currentTimeMillis();
 		String aiText = llmProvider.getService().generate(fullPrompt);
+
+		System.out.println("LLM TIME = " + (System.currentTimeMillis() - llmStart) + " ms");
 		memoryService.addMessage(sessionId, "AI", aiText);
 
 		// Return DTO
 		ChatResponse chatResponse = new ChatResponse();
 		chatResponse.setResponse(aiText);
-
+		System.out.println("TOTAL REQUEST TIME = " + (System.currentTimeMillis() - requestStart) + " ms");
 		return chatResponse;
 	}
 
