@@ -8,7 +8,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AgentExecutionContext {
-
-    private List<MenuItem> candidateMeals;
+	private List<MenuItem> candidateMeals;
+	
+	public boolean hasCandidateMeals() {
+	    return candidateMeals != null && !candidateMeals.isEmpty();
+	}
+    
 
 }

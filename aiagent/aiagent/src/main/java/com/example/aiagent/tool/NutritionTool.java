@@ -58,27 +58,26 @@ public class NutritionTool implements Tool {
 	@Override
 	public ToolResult execute(String query, QueryContext context, AgentExecutionContext executionContext) {
 
-		String lower = query.toLowerCase();
-
 		List<MenuItem> items;
 
-		if (executionContext.getCandidateMeals() != null && !executionContext.getCandidateMeals().isEmpty()) {
-			items = executionContext.getCandidateMeals();
-
+		if (executionContext.hasCandidateMeals()) {
 			System.out.println("NutritionTool using chained candidates");
+			items = executionContext.getCandidateMeals();
 		} else {
-			items = menuItemService.getAllMenuItems();
-			System.out.println("NutritionTool using full database");
+			System.out.println("NutritionTool using structured search");
+			items = menuItemService.structuredSearch(context, null);
 		}
 
-		return new ToolResult("Nutrition Tool", processNutrition(lower, context, items));
+		return new ToolResult("Nutrition Tool", processNutrition(query, context, items));
 	}
 
 	private String processNutrition(String query, QueryContext context, List<MenuItem> items) {
 
 		String lower = query.toLowerCase();
-		String metric = context.getNutritionMetric();
-		String sortOrder = context.getSortOrder();
+
+		String metric = context != null ? context.getNutritionMetric() : null;
+
+		String sortOrder = context != null ? context.getSortOrder() : null;
 
 		if (metric != null) {
 			ToDoubleFunction<MenuItem> extractor = METRICS.get(metric.toLowerCase());
@@ -95,7 +94,6 @@ public class NutritionTool implements Tool {
 		for (MenuItem item : items) {
 
 			if (lower.contains(item.getName().toLowerCase())) {
-
 				return buildNutritionResponse(item);
 			}
 		}
