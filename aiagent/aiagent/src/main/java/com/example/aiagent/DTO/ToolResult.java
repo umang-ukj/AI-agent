@@ -3,14 +3,10 @@ package com.example.aiagent.DTO;
 public class ToolResult {
 
 	private String toolName;
-	private String content;
+	private String message;
+	private Object data;
 
 	public ToolResult() {
-	}
-
-	public ToolResult(String toolName, String content) {
-		this.toolName = toolName;
-		this.content = content;
 	}
 
 	public String getToolName() {
@@ -21,11 +17,31 @@ public class ToolResult {
 		this.toolName = toolName;
 	}
 
-	public String getContent() {
-		return content;
+	public String getMessage() {
+		return message;
 	}
 
-	public void setContent(String content) {
-		this.content = content;
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public Object getData() {
+		return data;
+	}
+
+	public void setData(Object data) {
+		this.data = data;
+	}
+
+	public ToolResult(String toolName, String message, Object data) {
+		super();
+		this.toolName = toolName;
+		this.message = message;
+		this.data = data;
+	}
+
+	public ToolResult(String toolName, String message) {
+		this.toolName = toolName;
+		this.message = message;
 	}
 }

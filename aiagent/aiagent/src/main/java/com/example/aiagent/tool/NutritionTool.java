@@ -31,29 +31,31 @@ public class NutritionTool implements Tool {
 		return execute(query, null);
 	}
 
+	private ToolResult buildNutritionResult(String query, QueryContext context, List<MenuItem> items) {
+
+		MenuItem bestMeal = processNutrition(query, context, items);
+		if (bestMeal == null) {
+			return new ToolResult("Nutrition Tool", """
+					Try asking:
+
+					- Which meal has highest protein?
+					- Show low calorie meals
+					- Nutrition of Protein Shake
+					""");
+		}
+
+		return new ToolResult("Nutrition Tool", "Best nutrition match found", bestMeal);
+	}
+
 	@Override
 	public ToolResult execute(String query, QueryContext context) {
-		return new ToolResult("Nutrition Tool", processNutrition(query, context, menuItemService.getAllMenuItems()));
+		List<MenuItem> items = menuItemService.structuredSearch(context, null);
+
+		return buildNutritionResult(query, context, items);
 	}
 
 	private static final Map<String, ToDoubleFunction<MenuItem>> METRICS = Map.of("protein", item -> item.getProtein(),
 			"calories", item -> item.getCalories(), "carbs", item -> item.getCarbs(), "fat", item -> item.getFat());
-
-	private String buildNutritionResponse(MenuItem item) {
-
-		if (item == null) {
-			return "Nutrition data not found.";
-		}
-
-		return String.format("""
-				%s
-
-				Protein : %dg
-				Calories : %d
-				Carbs : %dg
-				Fat : %dg
-				""", item.getName(), item.getProtein(), item.getCalories(), item.getCarbs(), item.getFat());
-	}
 
 	@Override
 	public ToolResult execute(String query, QueryContext context, AgentExecutionContext executionContext) {
@@ -68,10 +70,10 @@ public class NutritionTool implements Tool {
 			items = menuItemService.structuredSearch(context, null);
 		}
 
-		return new ToolResult("Nutrition Tool", processNutrition(query, context, items));
+		return buildNutritionResult(query, context, items);
 	}
 
-	private String processNutrition(String query, QueryContext context, List<MenuItem> items) {
+	private MenuItem processNutrition(String query, QueryContext context, List<MenuItem> items) {
 
 		String lower = query.toLowerCase();
 
@@ -87,23 +89,17 @@ public class NutritionTool implements Tool {
 				MenuItem best = "DESC".equalsIgnoreCase(sortOrder) ? items.stream().max(comparator).orElse(null)
 						: items.stream().min(comparator).orElse(null);
 
-				return buildNutritionResponse(best);
+				return best;
 			}
 		}
 
 		for (MenuItem item : items) {
 
 			if (lower.contains(item.getName().toLowerCase())) {
-				return buildNutritionResponse(item);
+				return item;
 			}
 		}
 
-		return """
-				Try asking:
-
-				- Which meal has highest protein?
-				- Show low calorie meals
-				- Nutrition of Protein Shake
-				""";
+		return null;
 	}
 }

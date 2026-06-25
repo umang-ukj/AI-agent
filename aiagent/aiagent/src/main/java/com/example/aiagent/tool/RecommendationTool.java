@@ -34,41 +34,6 @@ public class RecommendationTool implements Tool {
 		return execute(query, context, new AgentExecutionContext());
 	}
 
-	private String buildRecommendations(List<MenuItem> items) {
-
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("Recommended Meals:\n\n");
-
-		int count = 0;
-
-		for (MenuItem item : items) {
-
-			sb.append(count + 1).append(". ").append(item.getName()).append(" - Rs. ").append(item.getPrice())
-					.append("\n");
-			sb.append("Reason: ");
-
-			String description = item.getDescription().toLowerCase();
-
-			if (description.contains("protein")) {
-				sb.append("High protein option");
-
-			} else if (description.contains("healthy")) {
-				sb.append("Healthy meal choice");
-			} else {
-				sb.append("Matches your preferences");
-			}
-			sb.append("\n\n");
-
-			count++;
-
-			if (count == 3) {
-				break;
-			}
-		}
-		return sb.toString();
-	}
-
 	@Override
 	public ToolResult execute(String query, QueryContext context, AgentExecutionContext executionContext) {
 
@@ -76,8 +41,9 @@ public class RecommendationTool implements Tool {
 		if (items.isEmpty()) {
 			return new ToolResult("RecommendationTool", "No recommendations found.");
 		}
+
 		executionContext.setCandidateMeals(items);
 		System.out.println("Stored Candidate Meals = " + items.size());
-		return new ToolResult("RecommendationTool", buildRecommendations(items));
+		return new ToolResult("RecommendationTool", "Found " + items.size() + " recommendations", items);
 	}
 }

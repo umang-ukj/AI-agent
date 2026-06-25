@@ -30,37 +30,23 @@ public class MenuItemTool implements Tool {
 	}
 
 	public ToolResult execute(String query, Restaurant restaurant) {
-		return new ToolResult("MenuItem Tool", buildResponse(menuItemService.semanticSearch(query, restaurant)));
-	}
-
-	private String buildResponse(List<MenuItem> items) {
+		List<MenuItem> items = menuItemService.semanticSearch(query, restaurant);
 
 		if (items.isEmpty()) {
-			return "No matching menu items found.";
+			return new ToolResult("MenuItem Tool", "No matching menu items found.");
 		}
 
-		StringBuilder menuData = new StringBuilder();
-
-		for (MenuItem item : items) {
-
-			menuData.append("Restaurant: ").append(item.getRestaurant().getName()).append("\n").append("Name: ")
-					.append(item.getName()).append(", Price: ").append(item.getPrice()).append(", Description: ")
-					.append(item.getDescription()).append("\n");
-		}
-
-		return menuData.toString();
+		return new ToolResult("MenuItem Tool", "Found " + items.size() + " menu items", items);
 	}
 
 	@Override
 	public ToolResult execute(String query, QueryContext context) {
 
 		List<MenuItem> items = menuItemService.structuredSearch(context, null);
-
 		if (items.isEmpty()) {
 			return new ToolResult("MenuItem Tool", "No matching menu item found.");
 		}
-
-		return new ToolResult("MenuItem Tool", buildResponse(items));
+		return new ToolResult("MenuItem Tool", "Found " + items.size() + " menu items", items);
 	}
 
 }

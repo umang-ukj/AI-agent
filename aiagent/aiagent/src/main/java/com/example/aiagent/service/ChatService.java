@@ -41,6 +41,9 @@ public class ChatService {
 	@Autowired
 	private AgentAnalysisService agentAnalysisService;
 
+	@Autowired
+	private PromptFormatter promptFormatter;
+
 	public ChatResponse getResponse(ChatRequest chatRequest) {
 		long requestStart = System.currentTimeMillis();
 
@@ -212,9 +215,15 @@ public class ChatService {
 			}
 
 			System.out.println("TOOL = " + tool.getClass().getSimpleName());
-			System.out.println("TOOL RESULT = [" + toolResult.getContent() + "]");
+
+			String formattedResult = toolResult.getData() != null ? promptFormatter.format(toolResult.getData())
+					: toolResult.getMessage();
+
+			System.out.println("TOOL RESULT = [" + formattedResult + "]");
+
 			combinedToolContext.append("\n=== ").append(toolResult.getToolName()).append(" ===\n")
-					.append(toolResult.getContent()).append("\n");
+					.append(formattedResult).append("\n");
+			
 		}
 		System.out.println("TOOL TIME = " + (System.currentTimeMillis() - toolStart) + " ms");
 		String toolContext = combinedToolContext.toString();

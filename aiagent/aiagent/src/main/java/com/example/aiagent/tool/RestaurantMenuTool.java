@@ -25,34 +25,23 @@ public class RestaurantMenuTool implements Tool {
 	public ToolResult execute(String query, QueryContext context) {
 
 		if (context == null || context.getRestaurantName() == null) {
-			return new ToolResult("RestaurantMenu Tool","Restaurant name not found.");
+			return new ToolResult("RestaurantMenu Tool", "Restaurant name not found.");
 		}
 
 		Restaurant restaurant = restaurantRepository.findAll().stream()
 				.filter(r -> r.getName().equalsIgnoreCase(context.getRestaurantName())).findFirst().orElse(null);
 
 		if (restaurant == null) {
-			return new ToolResult("RestaurantMenu Tool","Restaurant not found.");
+			return new ToolResult("RestaurantMenu Tool", "Restaurant not found.");
 		}
 
 		List<MenuItem> items = menuItemRepository.findByRestaurant(restaurant);
 
 		if (items.isEmpty()) {
-			return new ToolResult("RestaurantMenu Tool","No menu items found.");
+			return new ToolResult("RestaurantMenu Tool", "No menu items found.");
 		}
 
-		StringBuilder result = new StringBuilder();
-
-		result.append("Restaurant: ").append(restaurant.getName()).append("\n\n");
-
-		result.append("Menu Items:\n");
-
-		for (MenuItem item : items) {
-
-			result.append(item.getName()).append(" - Rs. ").append(item.getPrice()).append("\n");
-		}
-
-		return new ToolResult("RestaurantMenu Tool", result.toString());
+		return new ToolResult("RestaurantMenu Tool", "Found " + items.size() + " menu items", items);
 	}
 
 	@Override
@@ -62,7 +51,7 @@ public class RestaurantMenuTool implements Tool {
 
 	@Override
 	public ToolResult execute(String query) {
-		return new ToolResult("RestaurantMenu Tool","Restaurant menu query requires context");
-		
+		return new ToolResult("RestaurantMenu Tool", "Restaurant menu query requires context");
+
 	}
 }

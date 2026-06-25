@@ -20,10 +20,10 @@ public class RestaurantTool implements Tool {
 	public Intent supportedIntent() {
 		return Intent.RESTAURANT_SEARCH;
 	}
-	
+
 	@Override
 	public ToolResult execute(String query) {
-	    return execute(query, new QueryContext());
+		return execute(query, new QueryContext());
 	}
 
 	@Override
@@ -56,15 +56,10 @@ public class RestaurantTool implements Tool {
 					""");
 		}
 
-		StringBuilder sb = new StringBuilder();
-
-		for (Restaurant restaurant : restaurants) {
-
-			sb.append("Name: ").append(restaurant.getName()).append(", Type: ").append(restaurant.getType())
-					.append(", Price: ").append(restaurant.getPrice()).append(", Description: ")
-					.append(restaurant.getDescription()).append("\n");
+		if (restaurants.isEmpty()) {
+			return new ToolResult("Restaurant Tool", "No restaurants found.");
 		}
 
-		return new ToolResult("Restaurant Tool", sb.toString());
+		return new ToolResult("Restaurant Tool", "Found " + restaurants.size() + " restaurants", restaurants);
 	}
 }
